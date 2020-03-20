@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace tasklist
 {
-    public interface ITasklistLoader
+    public class RecurringTasksScheme
     {
-        Tasklist Load();
-        bool Save(Tasklist tasklist);
-        DateTime GetFileLastModifiedTime();
+        public List<TodoTaskRepeatedTemplate> repeatedTasks = new List<TodoTaskRepeatedTemplate>();
     }
 }

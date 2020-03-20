@@ -4,10 +4,12 @@ namespace tasklist
 {
     class Program
     {
-        ITasklistLoader loader = new TasklistLoader();
-
         static void Main(string[] args)
         {
+            ITasklistLoader loader = new TasklistLoader();
+
+            Tasklist l = loader.Load();
+            loader.Save(l);
         }
     }
 }

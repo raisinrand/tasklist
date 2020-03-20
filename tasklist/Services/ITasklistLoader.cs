@@ -9,7 +9,7 @@ namespace tasklist
     public interface ITasklistLoader
     {
         Tasklist Load();
-        bool Save(Tasklist tasks);
+        bool Save(Tasklist tasklist);
         DateTime GetFileLastModifiedTime();
     }
 }

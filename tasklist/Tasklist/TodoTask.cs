@@ -4,13 +4,11 @@ using System.Windows.Input;
 
 namespace tasklist
 {
-    public class TodoTask
+    public class TodoTask : ITodoTask
     {
-        public bool Completed { get; set; }
         public string Name { get; set; }
         public TimeSpan Duration { get; set; }
         public int Difficulty { get; set; }
-        public int Priority { get; set; }
         public bool IsDue { get; set; }
         //what time task must be completed by, the scheduler will try to fit this task in before the duedate
         public DateTime DueDate { get; set; }

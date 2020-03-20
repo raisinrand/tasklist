@@ -6,8 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Globalization;
 using System.IO;
-using tasklist.Converters;
-using CommonServiceLocator;
 
 
 //TODO references to settings are temporarily hardcoded
@@ -42,7 +40,8 @@ namespace tasklist
             string backupPath = GetLocalBackupPath();
             try
             {
-                //@TODO: remove backup save when it feels safe
+                //TODO: instead of doing this, write to a copy initially and if all succeeds then copy the copy.
+                // regardless of success or failure, delete copy.
                 string[] oldLines = File.ReadAllLines(path);
                 try
                 {
@@ -53,12 +52,6 @@ namespace tasklist
                 {}
 
                 File.WriteAllLines(path, lines);
-
-                //TEMP
-                // for(int i = 0; i < settingsManager.CurrentSettings.ExtraWritePaths.Length; i++)
-                // {
-                //     File.Copy(path, $"{settingsManager.CurrentSettings.ExtraWritePaths[i]}/{fileName}",true);
-                // }
                 return true;
             }
             catch { throw; }
@@ -68,6 +61,7 @@ namespace tasklist
         const string repeatedInstancesMarker = indent + "REPEATED";
         const string repeatedTemplatesMarker = "REPEATED";
 
+        //TODO: this should write directly to stream to support big tasklist
         public static string[] ConvertTasklistToText(Tasklist tasklist)
         {
             List<string> lines = new List<string>();
@@ -77,7 +71,7 @@ namespace tasklist
             {
                 if(a.day.HasValue && b.day.HasValue)
                     return a.day.Value.CompareTo(b.day.Value);
-                //sort unscheduled day (null day value) to top
+                //sort unscheduled day (null day value) to bottom
                 int comp = 0;
                 if (a.day.HasValue)
                     comp -= 1;
@@ -105,42 +99,38 @@ namespace tasklist
                     string line = $"{indent}{WriteTodoTask((TodoTask)task)}";
                     lines.Add(line);
                 }
-                var repeatedInstances = dayTasks.tasks.Where(i => i is TodoTaskRepeated && ((TodoTaskRepeated)i).IsModified);
-                if (repeatedInstances.Count() > 0)
-                {
-                    lines.Add(repeatedInstancesMarker);
-                }
-                foreach (TodoTaskRepeated task in repeatedInstances)
-                {
-                    string line = $"{indent}{indent}{WriteTodoTaskRepeatedInstance(task)}";
-                    lines.Add(line);
-                }
+                // var repeatedInstances = dayTasks.tasks.Where(i => i is TodoTaskRepeated && ((TodoTaskRepeated)i).IsModified);
+                // if (repeatedInstances.Count() > 0)
+                // {
+                //     lines.Add(repeatedInstancesMarker);
+                // }
+                // foreach (TodoTaskRepeated task in repeatedInstances)
+                // {
+                //     string line = $"{indent}{indent}{WriteTodoTaskRepeatedInstance(task)}";
+                //     lines.Add(line);
+                // }
 
             }
-            //repeated templates
-            if(tasklist.repeatedTasks != null && tasklist.repeatedTasks.Count > 0)
-            {
-                lines.Add(repeatedTemplatesMarker);
-                foreach (TodoTaskRepeatedTemplate template in tasklist.repeatedTasks)
-                {
-                    string line = $"{indent}{WriteTodoTaskRepeatedTemplate(template)}";
-                    lines.Add(line);
-                }
-            }
+            // //repeated templates
+            // if(tasklist.repeatedTasks != null && tasklist.repeatedTasks.Count > 0)
+            // {
+            //     lines.Add(repeatedTemplatesMarker);
+            //     foreach (TodoTaskRepeatedTemplate template in tasklist.repeatedTasks)
+            //     {
+            //         string line = $"{indent}{WriteTodoTaskRepeatedTemplate(template)}";
+            //         lines.Add(line);
+            //     }
+            // }
             return lines.ToArray();
         }
         public static string WriteTodoTask(TodoTask task)
         {
             string line = "";
-            if (task.Completed)
-                line += "-";
             line += task.Name + " ";
             if (task.IsScheduledTime)
                 line += $"- {task.ScheduledTime.ToString("h:mm tt")} ";
 
             string tags = "";
-            if (task.Priority != 1)
-                tags += $"p{task.Priority} ";
             if (task.Difficulty != 1)
                 tags += $"d{task.Difficulty} ";
             if (task.Duration.TotalHours != 0)
@@ -153,37 +143,37 @@ namespace tasklist
             //return line with last space chopped off
             return line.Substring(0, line.Length - 1);
         }
-        public static string WriteTodoTaskRepeatedInstance(TodoTaskRepeated task)
-        {
-            string line = "";
-            if (task.Completed)
-                line += "-";
-            line += task.Name + " ";
-            if (task.LocalScheduledTimeOfDay != null)
-                line += $"- {(new DateTime() + (TimeSpan)task.LocalScheduledTimeOfDay).ToString("h:mm tt")} ";
-            //return line with last space chopped off
-            return line.Substring(0, line.Length - 1);
-        }
-        public static string WriteTodoTaskRepeatedTemplate(TodoTaskRepeatedTemplate template)
-        {
-            RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
-            string line = template.name + " ";
-            if (template.timeOfDay != null)
-                line += $"- {(new DateTime() + (TimeSpan)template.timeOfDay).ToString("h:mm tt")} ";
+        // public static string WriteTodoTaskRepeatedInstance(TodoTaskRepeated task)
+        // {
+        //     string line = "";
+        //     if (task.Completed)
+        //         line += "-";
+        //     line += task.Name + " ";
+        //     if (task.LocalScheduledTimeOfDay != null)
+        //         line += $"- {(new DateTime() + (TimeSpan)task.LocalScheduledTimeOfDay).ToString("h:mm tt")} ";
+        //     //return line with last space chopped off
+        //     return line.Substring(0, line.Length - 1);
+        // }
+        // public static string WriteTodoTaskRepeatedTemplate(TodoTaskRepeatedTemplate template)
+        // {
+        //     RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
+        //     string line = template.name + " ";
+        //     if (template.timeOfDay != null)
+        //         line += $"- {(new DateTime() + (TimeSpan)template.timeOfDay).ToString("h:mm tt")} ";
 
-            string tags = "";
-            if (template.priority != 1)
-                tags += $"p{template.priority} ";
-            if (template.difficulty != 1)
-                tags += $"d{template.difficulty} ";
-            if (template.duration.TotalHours != 0)
-                tags += $"{template.duration.TotalHours} ";
-            line += $"- {tags}";
+        //     string tags = "";
+        //     if (template.priority != 1)
+        //         tags += $"p{template.priority} ";
+        //     if (template.difficulty != 1)
+        //         tags += $"d{template.difficulty} ";
+        //     if (template.duration.TotalHours != 0)
+        //         tags += $"{template.duration.TotalHours} ";
+        //     line += $"- {tags}";
 
-            line += $"- {repeatSchemeToStringConverter.Convert(template.repeatScheme)} ";
-            //return line with last space chopped off
-            return line.Substring(0, line.Length - 1);
-        }
+        //     line += $"- {repeatSchemeToStringConverter.Convert(template.repeatScheme)} ";
+        //     //return line with last space chopped off
+        //     return line.Substring(0, line.Length - 1);
+        // }
         enum ReadState
         {
             Task,
@@ -193,7 +183,7 @@ namespace tasklist
         public static Tasklist ParseTasklist(string[] lines)
         {
             Tasklist tasklist = new Tasklist();
-            tasklist.repeatedTasks = new List<TodoTaskRepeatedTemplate>();
+            // tasklist.repeatedTasks = new List<TodoTaskRepeatedTemplate>();
             tasklist.tasksByDay = new List<DayTasks>();
             DayTasks currentDayTasks = null;
 
@@ -253,29 +243,27 @@ namespace tasklist
                     {
                         case ReadState.Task:
                             TodoTask task = ParseTodoTask(line, currentDayTasks.day);
-                            //TODO: handle past completed tasks better
-                            if(!task.Completed || task.ScheduledTime >= skipTime)
-                                currentDayTasks.tasks.Add(task);
+                            currentDayTasks.tasks.Add(task);
                             break;
-                        case ReadState.TaskRepeated:
-                            //save repeated instance line for later, parse these last so that all templates are loaded already
-                            repeatedInstanceLines.Add(line);
-                            repeatedInstanceDays.Add(currentDayTasks);
-                            break;
-                        case ReadState.RepeatedTemplate:
-                            TodoTaskRepeatedTemplate template = ParseTodoTaskRepeatedTemplate(line);
-                            tasklist.repeatedTasks.Add(template);
-                            break;
+                        // case ReadState.TaskRepeated:
+                        //     //save repeated instance line for later, parse these last so that all templates are loaded already
+                        //     repeatedInstanceLines.Add(line);
+                        //     repeatedInstanceDays.Add(currentDayTasks);
+                        //     break;
+                        // case ReadState.RepeatedTemplate:
+                        //     TodoTaskRepeatedTemplate template = ParseTodoTaskRepeatedTemplate(line);
+                        //     tasklist.repeatedTasks.Add(template);
+                        //     break;
                     }
                 }
             }
-            for(int i = 0; i < repeatedInstanceLines.Count; i++)
-            {
-                DayTasks dayTasks = repeatedInstanceDays[i];
-                TodoTaskRepeated taskRepeated = ParseTodoTaskRepeatedInstance(repeatedInstanceLines[i], tasklist.repeatedTasks, (DateTime)dayTasks.day);
-                if (taskRepeated.ScheduledTime >= skipTime)
-                    dayTasks.tasks.Add(taskRepeated);
-            }
+            // for(int i = 0; i < repeatedInstanceLines.Count; i++)
+            // {
+            //     DayTasks dayTasks = repeatedInstanceDays[i];
+            //     TodoTaskRepeated taskRepeated = ParseTodoTaskRepeatedInstance(repeatedInstanceLines[i], tasklist.repeatedTasks, (DateTime)dayTasks.day);
+            //     if (taskRepeated.ScheduledTime >= skipTime)
+            //         dayTasks.tasks.Add(taskRepeated);
+            // }
             //filter out empty days
             for (int i = 0; i < tasklist.tasksByDay.Count; i++)
             {
@@ -295,8 +283,6 @@ namespace tasklist
                 IsScheduledDay = day > DateTime.MinValue,
                 IsScheduledTime = false,
                 Difficulty = 1,
-                Priority = 1,
-                Completed = false,
                 IsDue = false
             };
             if (task.IsScheduledDay)
@@ -304,12 +290,6 @@ namespace tasklist
 
             if (input.Length == 0)
                 return task;
-
-            if(input[0] == '-')
-            {
-                task.Completed = true;
-                input = input.Substring(1, input.Length - 1);
-            }
 
             //split up this line's task information, delimited by dashes
             string[] dataSplit = input.Split('-');
@@ -348,9 +328,6 @@ namespace tasklist
                     {
                         case 'd':
                             task.Difficulty = int.Parse(property.Substring(1));
-                            break;
-                        case 'p':
-                            task.Priority = int.Parse(property.Substring(1));
                             break;
                         default:
                             TimeSpan duration = TimeUtils.RoundedHrsToTimeSpan(float.Parse(property));
@@ -488,7 +465,7 @@ namespace tasklist
         public string GetLocalPath()
         {
             // return $"{settingsManager.CurrentSettings.Directory}/{fileName}";
-            return $"C:/Users/thebi/Documents/work-local/tasklist-cmd/tasklist/notes/{fileName}";
+            return $"C:/Users/thebi/Documents/work-local/tasklist-cmd/tasklist/test/{fileName}";
         }
         //TODO: use system.io.path for this kind of stuff
         public string GetLocalBackupPath()

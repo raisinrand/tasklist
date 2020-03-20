@@ -40,17 +40,17 @@ namespace tasklist
                 else
                 {
                     currentDate = DateTime.MinValue;
-                    lines.Add(TasklistTextConsts.unscheduledMarker);
+                    lines.Add(TasklistTextDefs.unscheduledMarker);
                 }
                 foreach (TodoTask task in dayTasks.tasks.Where(i => i is TodoTask))
                 {
-                    string line = $"{TasklistTextConsts.indent}{WriteTodoTask((TodoTask)task)}";
+                    string line = TasklistTextDefs.Indent(1) + WriteTodoTask((TodoTask)task);
                     lines.Add(line);
                 }
             }
             return lines.ToArray();
         }
-        public static string WriteTodoTask(TodoTask task)
+        string WriteTodoTask(TodoTask task)
         {
             string line = "";
             line += task.Name + " ";
@@ -68,7 +68,19 @@ namespace tasklist
             if (task.IsDue)
                 line += $"- {task.DueDate.ToString("MM/dd")} ";
             //return line with last space chopped off
+            if(task.Notes != null) {
+                line += FormattedTaskNote(task.Notes);
+            }
             return line.Substring(0, line.Length - 1);
+        }
+        string FormattedTaskNote(string note) {
+            string[] lines = note.SplitLines();
+            string res = "";
+            for(int i = 0; i < lines.Length; i++)
+            {
+                res += Environment.NewLine + TasklistTextDefs.Indent(2) + lines[i];
+            }
+            return res;
         }
         enum ReadState
         {
@@ -87,10 +99,6 @@ namespace tasklist
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
-
-                //skip empty lines
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
                 string trimmedLine = line.Trim(' ', '\t');
 
                 //check if this line marks a new day
@@ -105,13 +113,22 @@ namespace tasklist
                     readState = ReadState.Task;
                 }
                 //check if this line marks unscheduled tasks
-                else if (line == TasklistTextConsts.unscheduledMarker)
+                else if (line == TasklistTextDefs.unscheduledMarker)
                 {
                     currentDayTasks = new DayTasks();
                     currentDayTasks.day = null;
                     currentDayTasks.tasks = new List<ITodoTask>();
                     tasklist.tasksByDay.Add(currentDayTasks);
                     readState = ReadState.Task;
+                }
+                //check if this line marks a note about the previous task
+                else if (line.StartsWith(TasklistTextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
+                {
+                    if(currentDayTasks.tasks.Count ==0) continue;
+                    var prevTask = currentDayTasks.tasks[currentDayTasks.tasks.Count - 1] as TodoTask;
+                    if(prevTask == null) continue;
+                    prevTask.Notes += (String.IsNullOrWhiteSpace(prevTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
+                    
                 }
                 //otherwise read task information from this line
                 else
@@ -126,18 +143,11 @@ namespace tasklist
                     }
                 }
             }
-            //filter out empty days
-            for (int i = 0; i < tasklist.tasksByDay.Count; i++)
-            {
-                if (tasklist.tasksByDay[i].tasks.Count == 0)
-                {
-                    tasklist.tasksByDay.RemoveAt(i);
-                    i--;
-                }
-            }
+
+            FilterEmptyDays(tasklist);
             return tasklist;
         }
-        static TodoTask ParseTodoTask(string input, DateTime? day)
+        TodoTask ParseTodoTask(string input, DateTime? day)
         {
             TodoTask task = new TodoTask
             {
@@ -215,6 +225,17 @@ namespace tasklist
             }
 
             return task;
+        }
+        void FilterEmptyDays(Tasklist tasklist)
+        {
+            for (int i = 0; i < tasklist.tasksByDay.Count; i++)
+            {
+                if (tasklist.tasksByDay[i].tasks.Count == 0)
+                {
+                    tasklist.tasksByDay.RemoveAt(i);
+                    i--;
+                }
+            }
         }
     }
 }

@@ -15,5 +15,6 @@ namespace tasklist
         public bool IsScheduledDay { get; set; }
         public bool IsScheduledTime { get; set; }
         public DateTime ScheduledTime { get; set; }
+        public string Notes { get; set; }
     }
 }

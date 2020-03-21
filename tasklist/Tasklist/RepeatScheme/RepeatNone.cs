@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace tasklist
 {
@@ -17,6 +13,22 @@ namespace tasklist
         public override string ToString()
         {
             return Day.ToString(@"m/d/yyyy");
+        }
+        public override bool Equals(Object obj)
+        {
+            //Check for null and compare run-time types.
+            if ((obj == null) || ! this.GetType().Equals(obj.GetType())) 
+            {
+                return false;
+            }
+            else { 
+                RepeatNone p = (RepeatNone) obj; 
+                return p.Day.Equals(Day);
+            }   
+        }
+        public override int GetHashCode()
+        {
+            return Day.GetHashCode();
         }
     }
 }

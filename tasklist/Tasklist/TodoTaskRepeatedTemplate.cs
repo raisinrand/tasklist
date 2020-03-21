@@ -9,13 +9,11 @@ namespace tasklist
     /// <summary>
     /// defines the template for a repeated todotask
     /// </summary>
-    public class TodoTaskRepeatedTemplate
+    public class RecurringTaskTemplate
     {
         public string name;
-        public TimeSpan duration;
-        public int difficulty;
-        public int priority;
         public TimeSpan? timeOfDay;
+        public string notes;
         public RepeatScheme repeatScheme;
     }
 }

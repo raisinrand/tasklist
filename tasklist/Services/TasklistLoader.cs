@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Globalization; 
+using System.Globalization;
 
 namespace tasklist
 {
     public class TasklistLoader : FileLoaderSpecified<Tasklist>, ILoader<Tasklist>
     {
-        protected override string FileName => "do.txt"; 
+        protected override string FileName => "do.txt";
 
         protected override string[] Write(Tasklist tasklist)
         {
@@ -56,20 +56,12 @@ namespace tasklist
             if (task.ScheduledTime.HasValue)
                 line += $"- {task.ScheduledTime.Value.ToString("h:mm tt")} ";
 
-            if(task.Notes != null) {
-                line += FormattedTaskNote(task.Notes);
+            if (task.Notes != null)
+            {
+                line += TasklistTextDefs.FormattedTaskNote(task.Notes);
             }
             //return line with last space chopped
             return line.Substring(0, line.Length - 1);
-        }
-        string FormattedTaskNote(string note) {
-            string[] lines = note.SplitLines();
-            string res = "";
-            for(int i = 0; i < lines.Length; i++)
-            {
-                res += Environment.NewLine + TasklistTextDefs.Indent(2) + lines[i];
-            }
-            return res;
         }
         protected override Tasklist Parse(string[] lines)
         {
@@ -101,11 +93,11 @@ namespace tasklist
                 //check if this line marks a note about the previous task
                 else if (line.StartsWith(TasklistTextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
                 {
-                    if(currentDayTasks.tasks.Count ==0) continue;
+                    if (currentDayTasks.tasks.Count == 0) continue;
                     var prevTask = currentDayTasks.tasks[currentDayTasks.tasks.Count - 1] as TodoTask;
-                    if(prevTask == null) continue;
+                    if (prevTask == null) continue;
                     prevTask.Notes += (String.IsNullOrWhiteSpace(prevTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
-                    
+
                 }
                 //otherwise read task information from this line
                 else

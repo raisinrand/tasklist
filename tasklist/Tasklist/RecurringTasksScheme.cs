@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace tasklist
 {
-    public class RecurringTasksScheme
+    public class RecurringTasks
     {
-        public List<TodoTaskRepeatedTemplate> repeatedTasks = new List<TodoTaskRepeatedTemplate>();
+        public List<RecurringTaskTemplate> repeatedTasks = new List<RecurringTaskTemplate>();
     }
 }

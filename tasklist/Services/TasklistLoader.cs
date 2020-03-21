@@ -54,7 +54,7 @@ namespace tasklist
             string line = "";
             line += task.Name + " ";
             if (task.ScheduledTime.HasValue)
-                line += $"- {task.ScheduledTime.Value.ToString("h:mm tt")} ";
+                line += $"- {(new DateTime() + (TimeSpan)task.ScheduledTime.Value).ToString("h:mm tt")} ";
 
             if (task.Notes != null)
             {
@@ -114,10 +114,7 @@ namespace tasklist
         TodoTask ParseTodoTask(string input, DateTime? day)
         {
             bool isScheduledDay = day > DateTime.MinValue;
-            TodoTask task = new TodoTask
-            {
-                ScheduledTime = DateTime.MaxValue
-            };
+            TodoTask task = new TodoTask();
 
             if (input.Length == 0)
                 return task;
@@ -138,7 +135,7 @@ namespace tasklist
                 DateTime time;
                 if (DateTime.TryParseExact(scheduledTimeText, "h:mm tt", null, DateTimeStyles.None, out time))
                 {
-                    task.ScheduledTime = day + time.TimeOfDay;
+                    task.ScheduledTime = time.TimeOfDay;
                     currentSplit++;
                 }
             }

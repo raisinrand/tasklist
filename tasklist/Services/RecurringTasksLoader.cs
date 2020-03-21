@@ -17,24 +17,26 @@ namespace tasklist
             //repeated templates
             foreach (RecurringTaskTemplate template in recurring.repeatedTasks)
             {
-                if(template.repeatScheme != currentScheme) {
-                    lines.Add(RepeatSchemeLabel(template.repeatScheme));
-                    currentScheme = template.repeatScheme;
+                if (template.RepeatScheme != currentScheme)
+                {
+                    lines.Add(RepeatSchemeLabel(template.RepeatScheme));
+                    currentScheme = template.RepeatScheme;
                 }
-                string line = TasklistTextDefs.Indent(1)+WriteTodoTaskRepeatedTemplate(template);
+                string line = TasklistTextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
                 lines.Add(line);
             }
             return lines.ToArray();
         }
-        string RepeatSchemeLabel(RepeatScheme scheme) {
+        string RepeatSchemeLabel(RepeatScheme scheme)
+        {
             return $"{repeatSchemeToStringConverter.Convert(scheme)}:";
         }
         string WriteTodoTaskRepeatedTemplate(RecurringTaskTemplate template)
         {
             RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
-            string line = template.name + " ";
-            if (template.timeOfDay != null)
-                line += $"- {(new DateTime() + (TimeSpan)template.timeOfDay).ToString("h:mm tt")} ";
+            string line = template.Name + " ";
+            if (template.TimeOfDay != null)
+                line += $"- {(new DateTime() + (TimeSpan)template.TimeOfDay).ToString("h:mm tt")} ";
             //return line with last space chopped off
             return line.Substring(0, line.Length - 1);
         }
@@ -57,12 +59,13 @@ namespace tasklist
                     if (recurring.repeatedTasks.Count == 0) continue;
                     var prevTask = recurring.repeatedTasks[recurring.repeatedTasks.Count - 1] as RecurringTaskTemplate;
                     if (prevTask == null) continue;
-                    prevTask.notes += (String.IsNullOrWhiteSpace(prevTask.notes) ? "" : Environment.NewLine) + trimmedLine;
+                    prevTask.Notes += (String.IsNullOrWhiteSpace(prevTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
                 }
                 //otherwise read task information from this line
-                else {
+                else
+                {
                     line = trimmedLine;
-                    RecurringTaskTemplate template = ParseRecurringTaskTemplate(line,currentScheme);
+                    RecurringTaskTemplate template = ParseRecurringTaskTemplate(line, currentScheme);
                     recurring.repeatedTasks.Add(template);
                 }
             }
@@ -72,14 +75,14 @@ namespace tasklist
         {
             RecurringTaskTemplate template = new RecurringTaskTemplate()
             {
-                repeatScheme = scheme
+                RepeatScheme = scheme
             };
             //split up this line's task information, delimited by dashes
             string[] dataSplit = input.Split('-');
             int currentSplit = 0;
 
             //set name
-            template.name = dataSplit[currentSplit].Trim(' ');
+            template.Name = dataSplit[currentSplit].Trim(' ');
             currentSplit++;
 
             //set scheduled time
@@ -90,7 +93,7 @@ namespace tasklist
                 DateTime time;
                 if (DateTime.TryParseExact(scheduledTimeText, "h:mm tt", null, DateTimeStyles.None, out time))
                 {
-                    template.timeOfDay = time.TimeOfDay;
+                    template.TimeOfDay = time.TimeOfDay;
                     currentSplit++;
                 }
             }

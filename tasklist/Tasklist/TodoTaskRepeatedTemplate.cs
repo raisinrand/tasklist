@@ -11,9 +11,9 @@ namespace tasklist
     /// </summary>
     public class RecurringTaskTemplate
     {
-        public string name;
-        public TimeSpan? timeOfDay;
-        public string notes;
-        public RepeatScheme repeatScheme;
+        public string Name { get; set; }
+        public TimeSpan? TimeOfDay { get; set; }
+        public string Notes { get; set; }
+        public RepeatScheme RepeatScheme { get; set; }
     }
 }

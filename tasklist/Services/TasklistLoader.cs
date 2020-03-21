@@ -1,15 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Globalization;
-using System.IO;
-
+using System.Globalization; 
 
 namespace tasklist
 {
     public class TasklistLoader : FileLoaderSpecified<Tasklist>, ILoader<Tasklist>
     {
         protected override string FileName => "do.txt"; 
+
+
+        RecurringTasksScheme recurringTasks;
+
+        public TasklistLoader(RecurringTasksScheme recurringTasks) {
+            this.recurringTasks = recurringTasks;
+        }
+
+
         protected override string[] Write(Tasklist tasklist)
         {
             List<string> lines = new List<string>();
@@ -54,23 +61,13 @@ namespace tasklist
         {
             string line = "";
             line += task.Name + " ";
-            if (task.IsScheduledTime)
-                line += $"- {task.ScheduledTime.ToString("h:mm tt")} ";
+            if (task.ScheduledTime.HasValue)
+                line += $"- {task.ScheduledTime.Value.ToString("h:mm tt")} ";
 
-            string tags = "";
-            if (task.Difficulty != 1)
-                tags += $"d{task.Difficulty} ";
-            if (task.Duration.TotalHours != 0)
-                tags += $"{task.Duration.TotalHours} ";
-            if (tags != "" || task.IsDue)
-                line += $"- {tags}";
-
-            if (task.IsDue)
-                line += $"- {task.DueDate.ToString("MM/dd")} ";
-            //return line with last space chopped off
             if(task.Notes != null) {
                 line += FormattedTaskNote(task.Notes);
             }
+            //return line with last space chopped
             return line.Substring(0, line.Length - 1);
         }
         string FormattedTaskNote(string note) {
@@ -82,20 +79,10 @@ namespace tasklist
             }
             return res;
         }
-        enum ReadState
-        {
-            Task
-        }
         protected override Tasklist Parse(string[] lines)
         {
             Tasklist tasklist = new Tasklist();
             DayTasks currentDayTasks = null;
-
-            List<string> repeatedInstanceLines = new List<string>();
-            List<DayTasks> repeatedInstanceDays = new List<DayTasks>();
-
-            ReadState readState = ReadState.Task;
-
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
@@ -110,7 +97,6 @@ namespace tasklist
                     currentDayTasks.day = dateMark;
                     currentDayTasks.tasks = new List<ITodoTask>();
                     tasklist.tasksByDay.Add(currentDayTasks);
-                    readState = ReadState.Task;
                 }
                 //check if this line marks unscheduled tasks
                 else if (line == TasklistTextDefs.unscheduledMarker)
@@ -119,7 +105,6 @@ namespace tasklist
                     currentDayTasks.day = null;
                     currentDayTasks.tasks = new List<ITodoTask>();
                     tasklist.tasksByDay.Add(currentDayTasks);
-                    readState = ReadState.Task;
                 }
                 //check if this line marks a note about the previous task
                 else if (line.StartsWith(TasklistTextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
@@ -134,13 +119,8 @@ namespace tasklist
                 else
                 {
                     line = trimmedLine;
-                    switch (readState)
-                    {
-                        case ReadState.Task:
-                            TodoTask task = ParseTodoTask(line, currentDayTasks.day);
-                            currentDayTasks.tasks.Add(task);
-                            break;
-                    }
+                    TodoTask task = ParseTodoTask(line, currentDayTasks.day);
+                    currentDayTasks.tasks.Add(task);
                 }
             }
 
@@ -149,16 +129,11 @@ namespace tasklist
         }
         TodoTask ParseTodoTask(string input, DateTime? day)
         {
+            bool isScheduledDay = day > DateTime.MinValue;
             TodoTask task = new TodoTask
             {
-                ScheduledTime = DateTime.MaxValue,
-                IsScheduledDay = day > DateTime.MinValue,
-                IsScheduledTime = false,
-                Difficulty = 1,
-                IsDue = false
+                ScheduledTime = DateTime.MaxValue
             };
-            if (task.IsScheduledDay)
-                task.ScheduledTime = (DateTime)day;
 
             if (input.Length == 0)
                 return task;
@@ -173,56 +148,55 @@ namespace tasklist
 
             //set scheduled time
             //if this task is scheduled, check the next split for the scheduled time
-            if (task.IsScheduledDay && dataSplit.Length > currentSplit)
+            if (isScheduledDay && dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
                 DateTime time;
                 if (DateTime.TryParseExact(scheduledTimeText, "h:mm tt", null, DateTimeStyles.None, out time))
                 {
-                    task.IsScheduledTime = true;
-                    task.ScheduledTime += time.TimeOfDay;
+                    task.ScheduledTime = day + time.TimeOfDay;
                     currentSplit++;
                 }
             }
 
             //set properties
             //if there's another split, check it for properties
-            if (dataSplit.Length > currentSplit)
-            {
-                string[] propertySplit = dataSplit[currentSplit].Split(' ');
-                foreach (var property in propertySplit)
-                {
-                    //skip empty
-                    if (property.Length == 0)
-                        continue;
-                    //decide which property is being defined based on prefix
-                    switch (property[0])
-                    {
-                        case 'd':
-                            task.Difficulty = int.Parse(property.Substring(1));
-                            break;
-                        default:
-                            TimeSpan duration = TimeUtils.RoundedHrsToTimeSpan(float.Parse(property));
-                            task.Duration = duration;
-                            break;
-                    }
-                }
-                currentSplit++;
-            }
+            // if (dataSplit.Length > currentSplit)
+            // {
+            //     string[] propertySplit = dataSplit[currentSplit].Split(' ');
+            //     foreach (var property in propertySplit)
+            //     {
+            //         //skip empty
+            //         if (property.Length == 0)
+            //             continue;
+            //         //decide which property is being defined based on prefix
+            //         switch (property[0])
+            //         {
+            //             case 'd':
+            //                 task.Difficulty = int.Parse(property.Substring(1));
+            //                 break;
+            //             default:
+            //                 TimeSpan duration = TimeUtils.RoundedHrsToTimeSpan(float.Parse(property));
+            //                 task.Duration = duration;
+            //                 break;
+            //         }
+            //     }
+            //     currentSplit++;
+            // }
 
             //set duedate
             //if there's another split, check it for duedate
-            if (dataSplit.Length > currentSplit)
-            {
-                string dueDateText = dataSplit[currentSplit].Trim(' ');
-                DateTime dueDate = DateTime.Today;
-                if (DateTime.TryParseExact(dueDateText, "MM/dd", null, DateTimeStyles.None, out dueDate))
-                {
-                    task.IsDue = true;
-                    task.DueDate = dueDate;
-                    currentSplit++;
-                }
-            }
+            // if (dataSplit.Length > currentSplit)
+            // {
+            //     string dueDateText = dataSplit[currentSplit].Trim(' ');
+            //     DateTime dueDate = DateTime.Today;
+            //     if (DateTime.TryParseExact(dueDateText, "MM/dd", null, DateTimeStyles.None, out dueDate))
+            //     {
+            //         task.IsDue = true;
+            //         task.DueDate = dueDate;
+            //         currentSplit++;
+            //     }
+            // }
 
             return task;
         }

@@ -7,15 +7,15 @@ namespace tasklist
     {
         static void Main(string[] args)
         {
-            TasklistLoader loader = new TasklistLoader();
-            Tasklist l = loader.Load();
-            loader.Save(l);
-            Console.WriteLine("Tasklist done.");
-
             var loader2 = new RecurringTasksLoader();
             RecurringTasksScheme s = loader2.Load();
             loader2.Save(s);
             Console.WriteLine("RecurringTasks done.");
+
+            TasklistLoader loader = new TasklistLoader(s);
+            Tasklist l = loader.Load();
+            loader.Save(l);
+            Console.WriteLine("Tasklist done.");
         }
     }
 }

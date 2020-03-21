@@ -9,14 +9,6 @@ namespace tasklist
     {
         protected override string FileName => "do.txt"; 
 
-
-        RecurringTasksScheme recurringTasks;
-
-        public TasklistLoader(RecurringTasksScheme recurringTasks) {
-            this.recurringTasks = recurringTasks;
-        }
-
-
         protected override string[] Write(Tasklist tasklist)
         {
             List<string> lines = new List<string>();

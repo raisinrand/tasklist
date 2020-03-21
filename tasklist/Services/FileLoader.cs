@@ -6,7 +6,7 @@ using System.IO;
 
 namespace tasklist
 {
-    public abstract class FileLoader<T>
+    public abstract class FileLoader<T> : ILoader<T>
     {
         public T Load()
         {
@@ -61,10 +61,6 @@ namespace tasklist
         string GetLocalBackupPath()
         {
             return GetLocalPath().Insert(GetLocalPath().LastIndexOf('.'), BackupExtension);
-        }
-        public DateTime GetFileLastModifiedTime()
-        {
-            return File.GetLastWriteTime(GetLocalPath());
         }
     }
 }

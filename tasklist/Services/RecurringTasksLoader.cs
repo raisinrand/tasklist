@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace tasklist
 {
@@ -13,17 +14,17 @@ namespace tasklist
         protected override string[] Write(RecurringTasks recurring)
         {
             List<string> lines = new List<string>();
-            RepeatScheme currentScheme = new RepeatNever();
-            //repeated templates
-            foreach (RecurringTaskTemplate template in recurring.repeatedTasks)
-            {
-                if (template.RepeatScheme != currentScheme)
-                {
-                    lines.Add(RepeatSchemeLabel(template.RepeatScheme));
-                    currentScheme = template.RepeatScheme;
+            List<RecurringTaskTemplate> l = new List<RecurringTaskTemplate>(recurring.repeatedTasks);
+            while(l.Count > 0) {
+                RecurringTaskTemplate current = l[0];
+                RepeatScheme scheme = current.RepeatScheme;
+                lines.Add(RepeatSchemeLabel(scheme));
+                var matches = l.Where(i => i.RepeatScheme.Equals(scheme)).ToArray();
+                foreach(var template in matches){
+                    string line = TasklistTextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
+                    lines.Add(line);
+                    l.Remove(template);
                 }
-                string line = TasklistTextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
-                lines.Add(line);
             }
             return lines.ToArray();
         }

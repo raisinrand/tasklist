@@ -21,7 +21,7 @@ namespace tasklist.CommandLine
             var timeSpanToStringConverter = new TimeSpanToStringConverter();
             var res = timeSpanToStringConverter.ConvertBack(s);
             if(res == null) {
-                throw new ArgumentException("Failed to parse time of day.");
+                throw new ArgumentException("Failed to parse time span.");
             }
             return (TimeSpan)res;
         }

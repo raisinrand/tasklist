@@ -9,6 +9,8 @@ namespace tasklist
     {
         RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
 
+        TimeOfDayToStringConverter timeOfDayToStringConverter = new TimeOfDayToStringConverter();
+
         protected override string Path => fileName;
         string fileName;
 
@@ -43,7 +45,7 @@ namespace tasklist
             RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
             string line = template.Name + " ";
             if (template.TimeOfDay != null)
-                line += $"- {(new DateTime() + (TimeSpan)template.TimeOfDay).ToString("h:mm tt")} ";
+                line += $"- {timeOfDayToStringConverter.Convert(template.TimeOfDay)} ";
             //return line with last space chopped off
             return line.Substring(0, line.Length - 1);
         }
@@ -97,10 +99,10 @@ namespace tasklist
             if (dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
-                DateTime time;
-                if (DateTime.TryParseExact(scheduledTimeText, "h:mm tt", null, DateTimeStyles.None, out time))
+                TimeSpan timeOfDay = (TimeSpan)timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
+                if (timeOfDay != null)
                 {
-                    template.TimeOfDay = time.TimeOfDay;
+                    template.TimeOfDay = timeOfDay;
                     currentSplit++;
                 }
             }

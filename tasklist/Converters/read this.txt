@@ -1,0 +1,2 @@
+currently relying on the fact that converters return null when null is passed in or conversion fails.
+if i change this, look at all uses of converters and fix any code relying on this assumption.

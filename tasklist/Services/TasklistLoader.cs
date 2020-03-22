@@ -10,6 +10,8 @@ namespace tasklist
         protected override string Path => fileName;
         string fileName;
 
+        TimeOfDayToStringConverter timeOfDayToStringConverter = new TimeOfDayToStringConverter();
+
         public TasklistLoader(string fileName)
         {
             this.fileName = fileName;
@@ -60,7 +62,7 @@ namespace tasklist
             string line = "";
             line += task.Name + " ";
             if (task.ScheduledTime.HasValue)
-                line += $"- {(new DateTime() + (TimeSpan)task.ScheduledTime.Value).ToString("h:mm tt")} ";
+                line += $"- {timeOfDayToStringConverter.Convert(task.ScheduledTime.Value)} ";
 
             if (task.Notes != null)
             {
@@ -145,10 +147,10 @@ namespace tasklist
             if (isScheduledDay && dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
-                DateTime time;
-                if (DateTime.TryParseExact(scheduledTimeText, "h:mm tt", null, DateTimeStyles.None, out time))
+                TimeSpan timeOfDay = (TimeSpan)timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
+                if (timeOfDay != null)
                 {
-                    task.ScheduledTime = time.TimeOfDay;
+                    task.ScheduledTime = timeOfDay;
                     currentSplit++;
                 }
             }

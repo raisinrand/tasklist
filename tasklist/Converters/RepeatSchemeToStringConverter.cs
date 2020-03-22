@@ -38,10 +38,12 @@ namespace tasklist
                 return r;
             }
             return "";
+            // TODO: explicitly handle all types, return null for non repeatscheme types. also use visitor pattern instead of this.
         }
         public object ConvertBack(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
         {
-            string input = (string)value;
+            string input = value as string;
+            if(input == null) return null;
             input = input.Trim(' ');
             if(input.Length > 0 && char.IsNumber(input[0]))
             {

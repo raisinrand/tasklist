@@ -43,24 +43,21 @@ namespace tasklist
         protected abstract string[] Write(T obj);
 
 
-        protected abstract string FileName { get; }
+        protected abstract string Path { get; }
         protected abstract string CopyExtension { get; }
         protected abstract string BackupExtension { get; }
-
-        // TODO: how do we do path? how do we configure loader through this interface?
+        
         string GetLocalPath()
         {
-            // return $"{settingsManager.CurrentSettings.Directory}/{fileName}";
-            return $"C:/Users/thebi/Documents/work-local/tasklist-cmd/tasklist/test/{FileName}";
+            return $"{Path}";
         }
-        //TODO: use system.io.path for this kind of stuff
         string GetLocalCopyPath()
         {
-            return GetLocalPath().Insert(GetLocalPath().LastIndexOf('.'), CopyExtension);
+            return PathUtil.PathExtendFileName(Path,CopyExtension);
         }
         string GetLocalBackupPath()
         {
-            return GetLocalPath().Insert(GetLocalPath().LastIndexOf('.'), BackupExtension);
+            return PathUtil.PathExtendFileName(Path,BackupExtension);
         }
     }
 }

@@ -7,7 +7,13 @@ namespace tasklist
 {
     public class TasklistLoader : FileLoaderSpecified<Tasklist>, ILoader<Tasklist>
     {
-        protected override string FileName => "do.txt";
+        protected override string Path => fileName;
+        string fileName;
+
+        public TasklistLoader(string fileName)
+        {
+            this.fileName = fileName;
+        }
 
         protected override string[] Write(Tasklist tasklist)
         {
@@ -109,6 +115,13 @@ namespace tasklist
             }
 
             FilterEmptyDays(tasklist);
+            tasklist.tasksByDay.Sort(
+                (x, y) => {
+                    if(x.day.HasValue && y.day.HasValue) return x.day.Value.CompareTo(y.day.Value);
+                    else return (x.day.HasValue ? -1 : 1) - (y.day.HasValue ? -1 : 1);
+                }
+            );
+            //TODO: assert there is only one unscheduled task
             return tasklist;
         }
         TodoTask ParseTodoTask(string input, DateTime? day)

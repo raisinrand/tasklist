@@ -7,9 +7,15 @@ namespace tasklist
 {
     public class RecurringTasksLoader : FileLoaderSpecified<RecurringTasks>, ILoader<RecurringTasks>
     {
-        protected override string FileName => "do-recurring.txt";
-
         RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
+
+        protected override string Path => fileName;
+        string fileName;
+
+        public RecurringTasksLoader(string fileName)
+        {
+            this.fileName = fileName;
+        }
 
         protected override string[] Write(RecurringTasks recurring)
         {

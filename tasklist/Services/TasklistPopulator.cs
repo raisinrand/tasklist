@@ -13,14 +13,17 @@ namespace tasklist
 
         public void Populate(Tasklist tasklist, RecurringTasks recurring) {
             foreach(DayTasks dayTasks in tasklist.tasksByDay) {
-                if(!dayTasks.day.HasValue) continue;
-                foreach(RecurringTaskTemplate template in recurring.repeatedTasks) {
-                    if(!template.RepeatScheme.RepeatsOn(dayTasks.day.Value)) continue;
-                    // TODO maybe use more robust matching?
-                    bool dayHasTemplate = dayTasks.tasks.Exists(i => i.Name == template.Name);
-                    if(!dayHasTemplate) {
-                        dayTasks.tasks.Add(TaskFromTemplate(template));
-                    }
+                Populate(dayTasks, recurring);
+            }
+        }
+
+        public void Populate(DayTasks dayTasks, RecurringTasks recurring) {
+            if(!dayTasks.day.HasValue) return;
+            foreach(RecurringTaskTemplate template in recurring.repeatedTasks) {
+                if(!template.RepeatScheme.RepeatsOn(dayTasks.day.Value)) continue;
+                bool dayHasTemplate = dayTasks.tasks.Exists(i => i.Name.Equals(template.Name));
+                if(!dayHasTemplate) {
+                    dayTasks.tasks.Add(TaskFromTemplate(template));
                 }
             }
         }

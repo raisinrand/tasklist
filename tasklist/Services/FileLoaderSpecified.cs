@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 
 
-//TODO references to settings are temporarily hardcoded
 namespace tasklist
 {
     public abstract class FileLoaderSpecified<T> : FileLoader<T>

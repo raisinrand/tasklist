@@ -2,9 +2,11 @@ using System;
 
 namespace tasklist.CommandLine
 {
-    // TODO: generalize this?
+    // conversion for arguments
+    // returns null if string is null but throws if there is a malformed string.
     public class ArgConvert
     {
+        // generalize this fn if i add more parse fns
         public static TimeSpan? ParseTimeOfDay(string s) {
             if(s == null) return null;
             var timeOfDayToStringConverter = new TimeOfDayToStringConverter();

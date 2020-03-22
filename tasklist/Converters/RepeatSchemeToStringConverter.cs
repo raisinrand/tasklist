@@ -37,8 +37,11 @@ namespace tasklist
                 }
                 return r;
             }
-            return "";
-            // TODO: explicitly handle all types, return null for non repeatscheme types. also use visitor pattern instead of this.
+            // general placeholder
+            else if (value is RepeatScheme) {
+                return "";
+            }
+            return null;
         }
         public object ConvertBack(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
         {

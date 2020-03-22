@@ -99,12 +99,12 @@ namespace tasklist
             if (dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
-                TimeSpan timeOfDay = (TimeSpan)timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
-                if (timeOfDay != null)
+                var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
+                if (time != null)
                 {
-                    template.TimeOfDay = timeOfDay;
+                    template.TimeOfDay = (TimeSpan)time;
                     currentSplit++;
-                }
+                } else throw new ArgumentException("Failed to parse time of day while loading recurring tasks.");
             }
             return template;
         }

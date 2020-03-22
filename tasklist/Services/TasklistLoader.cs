@@ -123,8 +123,16 @@ namespace tasklist
                     else return (x.day.HasValue ? -1 : 1) - (y.day.HasValue ? -1 : 1);
                 }
             );
-            //TODO: assert there is only one unscheduled task
+            if(HasMultipleUnscheduledDays(tasklist)) {
+                throw new ArgumentException("Tasklist file has multiple unscheduled days.");
+            }
             return tasklist;
+        }
+        bool HasMultipleUnscheduledDays(Tasklist tasklist) {
+            if(tasklist.tasksByDay.Count < 2) return false;
+            else {
+                return !tasklist.tasksByDay[tasklist.tasksByDay.Count-2].day.HasValue;
+            }
         }
         TodoTask ParseTodoTask(string input, DateTime? day)
         {
@@ -147,12 +155,12 @@ namespace tasklist
             if (isScheduledDay && dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
-                TimeSpan timeOfDay = (TimeSpan)timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
-                if (timeOfDay != null)
+                var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
+                if (time != null)
                 {
-                    task.ScheduledTime = timeOfDay;
+                    task.ScheduledTime = (TimeSpan)time;
                     currentSplit++;
-                }
+                } else throw new ArgumentException("Failed to parse time of day while loading tasklist.");
             }
 
             //set properties

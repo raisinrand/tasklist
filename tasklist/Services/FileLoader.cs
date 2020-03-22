@@ -37,9 +37,7 @@ namespace tasklist
             }
         }
 
-        //TODO: this should read directly from stream to support big tasklist
         protected abstract T Parse(string[] lines);
-        //TODO: this should write directly to stream to support big tasklist
         protected abstract string[] Write(T obj);
 
 

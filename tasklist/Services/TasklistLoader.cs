@@ -60,16 +60,16 @@ namespace tasklist
         string WriteTodoTask(TodoTask task)
         {
             string line = "";
-            line += task.Name + " ";
+            line += task.Name;
             if (task.ScheduledTime.HasValue)
-                line += $"- {timeOfDayToStringConverter.Convert(task.ScheduledTime.Value)} ";
+                line += $" - {timeOfDayToStringConverter.Convert(task.ScheduledTime.Value)}";
 
             if (task.Notes != null)
             {
                 line += TasklistTextDefs.FormattedTaskNote(task.Notes);
             }
             //return line with last space chopped
-            return line.Substring(0, line.Length - 1);
+            return line;
         }
         protected override Tasklist Parse(string[] lines)
         {

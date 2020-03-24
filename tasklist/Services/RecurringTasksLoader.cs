@@ -29,7 +29,7 @@ namespace tasklist
                 lines.Add(RepeatSchemeLabel(scheme));
                 var matches = l.Where(i => i.RepeatScheme.Equals(scheme)).ToArray();
                 foreach(var template in matches){
-                    string line = TasklistTextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
+                    string line = TextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
                     lines.Add(line);
                     l.Remove(template);
                 }
@@ -56,14 +56,14 @@ namespace tasklist
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
-                string trimmedLine = line.Trim(' ', '\t');
+                string trimmedLine = line.TrimWhitespace();
 
-                if (trimmedLine.EndsWith(TasklistTextDefs.repeatSchemeMarker))
+                if (trimmedLine.EndsWith(TextDefs.repeatSchemeMarker))
                 {
                     currentScheme = (RepeatScheme)repeatSchemeToStringConverter.ConvertBack(trimmedLine);
                 }
                 //check if this line marks a note about the previous task
-                else if (line.StartsWith(TasklistTextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
+                else if (line.StartsWith(TextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
                 {
                     if (recurring.repeatedTasks.Count == 0) continue;
                     var prevTask = recurring.repeatedTasks[recurring.repeatedTasks.Count - 1] as RecurringTaskTemplate;
@@ -91,14 +91,14 @@ namespace tasklist
             int currentSplit = 0;
 
             //set name
-            template.Name = dataSplit[currentSplit].Trim(' ');
+            template.Name = dataSplit[currentSplit].TrimWhitespace();
             currentSplit++;
 
             //set scheduled time
             //if this task is scheduled, check the next split for the scheduled time
             if (dataSplit.Length > currentSplit)
             {
-                string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
+                string scheduledTimeText = dataSplit[currentSplit].TrimWhitespace();
                 var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
                 if (time != null)
                 {

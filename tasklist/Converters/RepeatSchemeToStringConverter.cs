@@ -47,7 +47,7 @@ namespace tasklist
         {
             string input = value as string;
             if(input == null) return null;
-            input = input.Trim(' ');
+            input = input.TrimWhitespace();
             if(input.Length > 0 && char.IsNumber(input[0]))
             {
                 int dayIntervalStartIndex = 0;

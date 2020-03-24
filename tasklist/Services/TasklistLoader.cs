@@ -47,11 +47,11 @@ namespace tasklist
                 else
                 {
                     currentDate = DateTime.MinValue;
-                    lines.Add(TasklistTextDefs.unscheduledMarker);
+                    lines.Add(TextDefs.unscheduledMarker);
                 }
                 foreach (TodoTask task in dayTasks.tasks.Where(i => i is TodoTask))
                 {
-                    string line = TasklistTextDefs.Indent(1) + WriteTodoTask((TodoTask)task);
+                    string line = TextDefs.Indent(1) + WriteTodoTask((TodoTask)task);
                     lines.Add(line);
                 }
             }
@@ -66,7 +66,7 @@ namespace tasklist
 
             if (task.Notes != null)
             {
-                line += TasklistTextDefs.FormattedTaskNote(task.Notes);
+                line += TextDefs.FormattedTaskNote(task.Notes);
             }
             //return line with last space chopped
             return line;
@@ -78,7 +78,7 @@ namespace tasklist
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
-                string trimmedLine = line.Trim(' ', '\t');
+                string trimmedLine = line.TrimWhitespace();
 
                 //check if this line marks a new day
                 DateTime dateMark;
@@ -91,7 +91,7 @@ namespace tasklist
                     tasklist.tasksByDay.Add(currentDayTasks);
                 }
                 //check if this line marks unscheduled tasks
-                else if (line == TasklistTextDefs.unscheduledMarker)
+                else if (line == TextDefs.unscheduledMarker)
                 {
                     currentDayTasks = new DayTasks();
                     currentDayTasks.day = null;
@@ -99,7 +99,7 @@ namespace tasklist
                     tasklist.tasksByDay.Add(currentDayTasks);
                 }
                 //check if this line marks a note about the previous task
-                else if (line.StartsWith(TasklistTextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
+                else if (line.StartsWith(TextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
                 {
                     if (currentDayTasks.tasks.Count == 0) continue;
                     var prevTask = currentDayTasks.tasks[currentDayTasks.tasks.Count - 1] as TodoTask;
@@ -147,14 +147,14 @@ namespace tasklist
             int currentSplit = 0;
 
             //set name
-            task.Name = dataSplit[currentSplit].Trim(' ');
+            task.Name = dataSplit[currentSplit].TrimWhitespace();
             currentSplit++;
 
             //set scheduled time
             //if this task is scheduled, check the next split for the scheduled time
             if (isScheduledDay && dataSplit.Length > currentSplit)
             {
-                string scheduledTimeText = dataSplit[currentSplit].Trim(' ');
+                string scheduledTimeText = dataSplit[currentSplit].TrimWhitespace();
                 var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
                 if (time != null)
                 {
@@ -192,7 +192,7 @@ namespace tasklist
             //if there's another split, check it for duedate
             // if (dataSplit.Length > currentSplit)
             // {
-            //     string dueDateText = dataSplit[currentSplit].Trim(' ');
+            //     string dueDateText = dataSplit[currentSplit].TrimWhitespace();
             //     DateTime dueDate = DateTime.Today;
             //     if (DateTime.TryParseExact(dueDateText, "MM/dd", null, DateTimeStyles.None, out dueDate))
             //     {

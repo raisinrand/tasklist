@@ -7,49 +7,74 @@ namespace tasklist
 {
     class Program
     {
+        // current day in help refers to first day in listing
+
+        const string defaultDir = "";
         const string defaultFileName = "do.txt";
         const string defaultRecurringExtension = "-recurring";
+        static readonly string defaultDoneFileName = Path.Join("log","done.txt");
 
-
-        [Verb("populate",
-            HelpText = "Populate days with their assigned recurring tasks. By default only applies to the first day in the list, if it exists.")]
-        class PopulateOptions
-        {
+        // TODO: this needs work. don't like how we're handling this at all.
+        class BaseOptions {
+            [Option('d', "directory", Default = defaultDir, HelpText = "The directory to use for relative paths.")]
+            public string directory { get; set; }
             [Option('f', "filename", Default = defaultFileName, HelpText = "The name of the tasklist file.")]
             public string FileName { get; set; }
-            // default is null here because populate method is expected to set this on its own.
-            [Option('r', "recurring", Default = null, HelpText = "The name of the recurring tasks file.")]
+            [Option('r', "recurringfile", Default = null, HelpText = "The name of the recurring tasks file.")]
             public string RecurringFileName { get; set; }
-            [Option('a', "all", Default = false, HelpText = "Applies to all days instead of just the first day.")]
+            [Option('c', "donefile", Default = null, HelpText = "The name of the done tasks file.")]
+            public string DoneFileName { get; set; }
+        }
+        class ProcessedBaseOptions {
+            public string path;
+            public string recurringPath;
+            public string donePath;
+            public ProcessedBaseOptions(BaseOptions opts) {
+                string recurringFileName = opts.RecurringFileName;
+
+                if (recurringFileName == null)
+                {
+                    recurringFileName = PathUtils.PathExtendFileName(opts.FileName, defaultRecurringExtension);
+                }
+                path = Path.Join(opts.directory,opts.FileName);
+                recurringPath = Path.Join(opts.directory,recurringFileName);
+                donePath = Path.Join(opts.directory,opts.DoneFileName ?? defaultDoneFileName);
+            }
+        }
+        [Verb("populate",
+            HelpText = "Populate days with their assigned recurring tasks. By default only applies to the current day, if it exists.")]
+        class PopulateOptions : BaseOptions
+        {
+            [Option('a', "all", Default = false, HelpText = "Applies to all days instead of just the current day.")]
             public bool All { get; set; }
         }
         [Verb("push",
             HelpText = "Pushes all scheduled times back by a set amount.")]
-        class PushOptions
+        class PushOptions : BaseOptions
         {
-            [Value(0, MetaName="amount", HelpText = "The amount of time to push scheduled times back by.")]
+            [Value(0, MetaName = "amount", HelpText = "The amount of time to push scheduled times back by.")]
             public string Amount { get; set; }
-            [Option('f', "filename", Default = defaultFileName, HelpText = "The name of the tasklist file.")]
-            public string FileName { get; set; }
             [Option('s', "start", Default = null, HelpText = "Starting time of the range to push back.")]
             public string startTime { get; set; }
             [Option('e', "end", Default = null, HelpText = "Ending time of the range to push back.")]
             public string endTime { get; set; }
         }
-        [Verb("test", HelpText = "Test command.")]
-        class TestOptions
+        [Verb("complete", HelpText = "Removes specified task from the current day and marks it as completed.")]
+        class CompleteOptions : BaseOptions
         {
+            [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
+            public string Task { get; set; }
         }
 
         static int Main(string[] args)
         {
             try
             {
-                return Parser.Default.ParseArguments<PopulateOptions, PushOptions, TestOptions>(args)
+                return Parser.Default.ParseArguments<PopulateOptions, PushOptions, CompleteOptions>(args)
                     .MapResult(
                     (PopulateOptions opts) => RunPopulateAndReturnExitCode(opts),
                     (PushOptions opts) => RunPushAndReturnExitCode(opts),
-                    (TestOptions opts) => RunTestAndReturnExitCode(opts),
+                    (CompleteOptions opts) => RunCompleteAndReturnExitCode(opts),
                     errs => 1);
             }
             catch
@@ -68,13 +93,9 @@ namespace tasklist
         }
         static void RunPopulate(PopulateOptions opts)
         {
-            string recurringFileName = opts.RecurringFileName;
-            if (recurringFileName == null)
-            {
-                recurringFileName = PathUtil.PathExtendFileName(opts.FileName, defaultRecurringExtension);
-            }
-            var recurringLoader = new RecurringTasksLoader(recurringFileName);
-            TasklistLoader tasklistLoader = new TasklistLoader(opts.FileName);
+            var baseOpts = new ProcessedBaseOptions(opts);
+            var recurringLoader = new RecurringTasksLoader(baseOpts.recurringPath);
+            TasklistLoader tasklistLoader = new TasklistLoader(baseOpts.path);
             Tasklist l = tasklistLoader.Load();
             var recurring = recurringLoader.Load();
             var populator = new TasklistPopulator();
@@ -84,9 +105,8 @@ namespace tasklist
             }
             else
             {
-                if (l.tasksByDay.Count == 0) return;
-                var targetDay = l.tasksByDay[0];
-                if (!targetDay.day.HasValue) return;
+                DayTasks targetDay;
+                if(!TryCurrentDay(l,out targetDay)) return;
                 populator.Populate(targetDay, recurring);
             }
             tasklistLoader.Save(l);
@@ -99,34 +119,69 @@ namespace tasklist
             Console.WriteLine("Done.");
             return 1;
         }
-        static void RunPush(PushOptions opts) {
-
-            TasklistLoader tasklistLoader = new TasklistLoader(opts.FileName);
+        static void RunPush(PushOptions opts)
+        {
+            var baseOpts = new ProcessedBaseOptions(opts);
+            TasklistLoader tasklistLoader = new TasklistLoader(baseOpts.path);
             Tasklist l = tasklistLoader.Load();
             TasklistPusher pusher = new TasklistPusher();
-            if (l.tasksByDay.Count == 0) return;
-            var targetDay = l.tasksByDay[0];
-            if (!targetDay.day.HasValue) return;
+            DayTasks targetDay;
+            if(!TryCurrentDay(l,out targetDay)) return;
             TimeSpan amount = (TimeSpan)ArgConvert.ParseTimeSpan(opts.Amount);
             TimeSpan? start = ArgConvert.ParseTimeOfDay(opts.startTime);
             TimeSpan? end = ArgConvert.ParseTimeOfDay(opts.endTime);
-            pusher.Push(targetDay,amount,start,end);
+            pusher.Push(targetDay, amount, start, end);
             tasklistLoader.Save(l);
         }
 
-        static int RunTestAndReturnExitCode(TestOptions opts)
+        static int RunCompleteAndReturnExitCode(CompleteOptions opts)
+        {
+            RunComplete(opts);
+            Console.WriteLine("Done.");
+            return 1;
+        }
+        static void RunComplete(CompleteOptions opts)
+        {
+            var baseOpts = new ProcessedBaseOptions(opts);
+            var tasklistLoader = new TasklistLoader(baseOpts.path);
+            Tasklist l = tasklistLoader.Load();
+            var doneLoader = new DoneTasksLoader(baseOpts.donePath);
+            DoneTasks d = doneLoader.Load();
+            TaskCompleter c = new TaskCompleter();
+            DayTasks targetDay;
+            if(!TryCurrentDay(l,out targetDay)) return;
+            int index;
+            if(!ArgConvert.TryParseTaskIndexFromPrefix(targetDay,opts.Task,out index)) {
+                throw new ArgumentException($"Could not find task from prefix '{opts.Task}'");
+            }
+            c.Complete(targetDay,index,d);
+            tasklistLoader.Save(l);
+            doneLoader.Save(d);
+        }
+
+        static int Test()
         {
             var loader2 = new RecurringTasksLoader(
-                Path.Combine("test",PathUtil.PathExtendFileName(defaultFileName, defaultRecurringExtension)));
+                Path.Combine("test", PathUtils.PathExtendFileName(defaultFileName, defaultRecurringExtension)));
             RecurringTasks s = loader2.Load();
             loader2.Save(s);
             Console.WriteLine("RecurringTasks done.");
 
-            TasklistLoader loader = new TasklistLoader(Path.Combine("test",defaultFileName));
+            TasklistLoader loader = new TasklistLoader(Path.Combine("test", defaultFileName));
             Tasklist l = loader.Load();
             loader.Save(l);
             Console.WriteLine("Tasklist done.");
             return 1;
         }
+
+        // returns true if current day is successfully found
+        public static bool TryCurrentDay(Tasklist l, out DayTasks current) {
+            current = null;
+            if (l.tasksByDay.Count == 0) return false;
+            var targetDay = l.tasksByDay[0];
+            if (!targetDay.day.HasValue) return false;
+            current = targetDay;
+            return true;
+        } 
     }
 }

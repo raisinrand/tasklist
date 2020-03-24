@@ -11,7 +11,11 @@ namespace tasklist
         public T Load()
         {
             string path = GetLocalPath();
-            string[] lines = File.ReadAllLines(path);
+            string[] lines;
+            if(!File.Exists(path) && IgnoreMissing) {
+                lines = new string[0];
+            }
+            else lines = File.ReadAllLines(path);
             T obj = Parse(lines);
             return obj;
         }
@@ -27,7 +31,9 @@ namespace tasklist
             string copy = GetLocalCopyPath();
             try
             {
-                File.Copy(path, backup, true);
+                if(File.Exists(path)) {
+                    File.Copy(path, backup, true);
+                }
                 File.WriteAllLines(copy, lines);
                 File.Copy(copy, path, true);
             }
@@ -44,18 +50,20 @@ namespace tasklist
         protected abstract string Path { get; }
         protected abstract string CopyExtension { get; }
         protected abstract string BackupExtension { get; }
-        
+
+        protected virtual bool IgnoreMissing { get { return false; } }
+
         string GetLocalPath()
         {
             return $"{Path}";
         }
         string GetLocalCopyPath()
         {
-            return PathUtil.PathExtendFileName(Path,CopyExtension);
+            return PathUtils.PathExtendFileName(Path, CopyExtension);
         }
         string GetLocalBackupPath()
         {
-            return PathUtil.PathExtendFileName(Path,BackupExtension);
+            return PathUtils.PathExtendFileName(Path, BackupExtension);
         }
     }
 }

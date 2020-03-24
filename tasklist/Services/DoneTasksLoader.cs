@@ -58,13 +58,13 @@ namespace tasklist
                 switch(mode)
                 {
                     case ParseMode.Done:
-                        res.doneTaskLabels.Add(line);
+                        res.doneTaskLabels.Add(trimmedLine);
                     break;
                     case ParseMode.Rescheduled:
-                        res.rescheduledTaskLabels.Add(line);
+                        res.rescheduledTaskLabels.Add(trimmedLine);
                     break;
                     case ParseMode.Skipped:
-                        res.skippedTaskLabels.Add(line);
+                        res.skippedTaskLabels.Add(trimmedLine);
                     break;
                 }
             }

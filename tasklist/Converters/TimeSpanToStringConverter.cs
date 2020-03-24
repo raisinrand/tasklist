@@ -3,16 +3,16 @@ using System.Globalization;
 
 namespace tasklist
 {
-    public class TimeSpanToStringConverter
+    public class TimeSpanToStringConverter : IConverter
     {
         const string hoursLabel = "h";
         const string minutesLabel = "m";
         const string secondsLabel = "s";
-        public object Convert(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
+        public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
             throw new NotImplementedException();
         }
-        public object ConvertBack(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
+        public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)
         {
             string input = value as string;
             if(input == null) return null;

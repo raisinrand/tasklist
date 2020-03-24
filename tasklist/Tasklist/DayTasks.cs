@@ -7,6 +7,6 @@ namespace tasklist
     public class DayTasks
     {
         public DateTime? day;
-        public List<ITodoTask> tasks;
+        public List<ITodoTask> tasks = new List<ITodoTask>();
     }
 }

@@ -59,8 +59,22 @@ namespace tasklist
             [Option('e', "end", Default = null, HelpText = "Ending time of the range to push back.")]
             public string endTime { get; set; }
         }
-        [Verb("complete", HelpText = "Removes specified task from the current day and marks it as completed.")]
+        [Verb("complete", HelpText = "Marks the specified task as complete and removes it from the tasklist.")]
         class CompleteOptions : BaseOptions
+        {
+            [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
+            public string Task { get; set; }
+        }
+        [Verb("reschedule", HelpText = "Reassigns the specified task.")]
+        class RescheduleOptions : BaseOptions
+        {
+            [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
+            public string Task { get; set; }
+            [Option('t', "to", Default = null, HelpText = "The day to reschedule the task to. Defaults to the day after the current day.")]
+            public string ToDate { get; set; }
+        }
+        [Verb("skip", HelpText = "Skips the specified task.")]
+        class SkipOptions : BaseOptions
         {
             [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
             public string Task { get; set; }
@@ -70,11 +84,19 @@ namespace tasklist
         {
             try
             {
-                return Parser.Default.ParseArguments<PopulateOptions, PushOptions, CompleteOptions>(args)
+                return Parser.Default.ParseArguments<
+                PopulateOptions,
+                PushOptions,
+                CompleteOptions,
+                RescheduleOptions,
+                SkipOptions
+                >(args)
                     .MapResult(
                     (PopulateOptions opts) => RunPopulateAndReturnExitCode(opts),
                     (PushOptions opts) => RunPushAndReturnExitCode(opts),
                     (CompleteOptions opts) => RunCompleteAndReturnExitCode(opts),
+                    (RescheduleOptions opts) => RunRescheduleAndReturnExitCode(opts),
+                    (SkipOptions opts) => RunSkipAndReturnExitCode(opts),
                     errs => 1);
             }
             catch
@@ -127,7 +149,7 @@ namespace tasklist
             TasklistPusher pusher = new TasklistPusher();
             DayTasks targetDay;
             if(!TryCurrentDay(l,out targetDay)) return;
-            TimeSpan amount = (TimeSpan)ArgConvert.ParseTimeSpan(opts.Amount);
+            TimeSpan amount = ArgConvert.ParseTimeSpan(opts.Amount).Value;
             TimeSpan? start = ArgConvert.ParseTimeOfDay(opts.startTime);
             TimeSpan? end = ArgConvert.ParseTimeOfDay(opts.endTime);
             pusher.Push(targetDay, amount, start, end);
@@ -149,15 +171,61 @@ namespace tasklist
             DoneTasks d = doneLoader.Load();
             TaskCompleter c = new TaskCompleter();
             DayTasks targetDay;
+            //TODO: maybe exception in this case?
             if(!TryCurrentDay(l,out targetDay)) return;
-            int index;
-            if(!ArgConvert.TryParseTaskIndexFromPrefix(targetDay,opts.Task,out index)) {
-                throw new ArgumentException($"Could not find task from prefix '{opts.Task}'");
-            }
+            int index = ParseIndexExcept(targetDay,opts.Task);
             c.Complete(targetDay,index,d);
             tasklistLoader.Save(l);
             doneLoader.Save(d);
         }
+ 
+        static int RunRescheduleAndReturnExitCode(RescheduleOptions opts)
+        {
+            RunReschedule(opts);
+            Console.WriteLine("Done.");
+            return 1;
+        }
+        static void RunReschedule(RescheduleOptions opts)
+        {
+            var baseOpts = new ProcessedBaseOptions(opts);
+            var tasklistLoader = new TasklistLoader(baseOpts.path);
+            Tasklist l = tasklistLoader.Load();
+            var doneLoader = new DoneTasksLoader(baseOpts.donePath);
+            DoneTasks d = doneLoader.Load();
+            TaskCompleter c = new TaskCompleter();
+            DayTasks targetDay;
+            if(!TryCurrentDay(l,out targetDay)) return;
+            int index = ParseIndexExcept(targetDay,opts.Task);
+            DateTime date;
+            if(opts.ToDate == null) date = targetDay.day.Value.AddDays(1);
+            else date = ArgConvert.ParseDateTime(opts.ToDate).Value;
+            c.Reschedule(l,targetDay,index,date,d);
+            tasklistLoader.Save(l);
+            doneLoader.Save(d);
+        }
+
+        static int RunSkipAndReturnExitCode(SkipOptions opts)
+        {
+            RunSkip(opts);
+            Console.WriteLine("Done.");
+            return 1;
+        }
+        static void RunSkip(SkipOptions opts)
+        {
+            var baseOpts = new ProcessedBaseOptions(opts);
+            var tasklistLoader = new TasklistLoader(baseOpts.path);
+            Tasklist l = tasklistLoader.Load();
+            var doneLoader = new DoneTasksLoader(baseOpts.donePath);
+            DoneTasks d = doneLoader.Load();
+            TaskCompleter c = new TaskCompleter();
+            DayTasks targetDay;
+            if(!TryCurrentDay(l,out targetDay)) return;
+            int index = ParseIndexExcept(targetDay,opts.Task);
+            c.Skip(targetDay,index,d);
+            tasklistLoader.Save(l);
+            doneLoader.Save(d);
+        }
+
 
         static int Test()
         {
@@ -175,13 +243,21 @@ namespace tasklist
         }
 
         // returns true if current day is successfully found
-        public static bool TryCurrentDay(Tasklist l, out DayTasks current) {
+        static bool TryCurrentDay(Tasklist l, out DayTasks current) {
             current = null;
             if (l.tasksByDay.Count == 0) return false;
             var targetDay = l.tasksByDay[0];
             if (!targetDay.day.HasValue) return false;
             current = targetDay;
             return true;
+        }
+
+        static int ParseIndexExcept(DayTasks targetDay, string prefix) {
+            int index;
+            if(!ArgConvert.TryParseTaskIndexFromPrefix(targetDay,prefix,out index)) {
+                throw new ArgumentException($"Could not find task from prefix '{prefix}'");
+            }
+            return index;
         } 
     }
 }

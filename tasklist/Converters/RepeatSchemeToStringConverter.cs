@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace tasklist
 {
-    public class RepeatSchemeToStringConverter
+    public class RepeatSchemeToStringConverter : IConverter
     {
         Dictionary<DayOfWeek,string> dayIds = new Dictionary<DayOfWeek, string>();
         public RepeatSchemeToStringConverter()
@@ -17,7 +17,7 @@ namespace tasklist
             dayIds.Add(DayOfWeek.Saturday, "Sa");
             dayIds.Add(DayOfWeek.Sunday, "Su");
         }
-        public object Convert(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
+        public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
             if(value is RepeatPeriodic repeatPeriodic)
             {
@@ -43,7 +43,7 @@ namespace tasklist
             }
             return null;
         }
-        public object ConvertBack(object value, Type targetType = null, object parameter = null, CultureInfo culture = null)
+        public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)
         {
             string input = value as string;
             if(input == null) return null;

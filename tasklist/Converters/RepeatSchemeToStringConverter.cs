@@ -17,6 +17,7 @@ namespace tasklist
             dayIds.Add(DayOfWeek.Saturday, "Sa");
             dayIds.Add(DayOfWeek.Sunday, "Su");
         }
+        const string dayOfMonthMarker = "of month";
         public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
             if(value is RepeatPeriodic repeatPeriodic)
@@ -37,6 +38,9 @@ namespace tasklist
                 }
                 return r;
             }
+            else if(value is RepeatDayOfMonth repeatDayOfMonth) {
+                return $"{repeatDayOfMonth.dayOfMonth} {dayOfMonthMarker}"; 
+            }
             // general placeholder
             else if (value is RepeatScheme) {
                 return "";
@@ -48,6 +52,10 @@ namespace tasklist
             string input = value as string;
             if(input == null) return null;
             input = input.TrimWhitespace();
+            if(input.EndsWith(dayOfMonthMarker)) {
+                int dayOfMonth = int.Parse(input.Substring(0,input.Length-dayOfMonthMarker.Length).TrimWhitespace());
+                return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
+            }
             if(input.Length > 0 && char.IsNumber(input[0]))
             {
                 int dayIntervalStartIndex = 0;

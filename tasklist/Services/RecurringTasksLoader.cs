@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace tasklist
@@ -60,7 +59,8 @@ namespace tasklist
 
                 if (trimmedLine.EndsWith(TextDefs.repeatSchemeMarker))
                 {
-                    currentScheme = (RepeatScheme)repeatSchemeToStringConverter.ConvertBack(trimmedLine);
+                    string schemeText = trimmedLine.Substring(0,trimmedLine.Length-TextDefs.repeatSchemeMarker.Length);
+                    currentScheme = (RepeatScheme)repeatSchemeToStringConverter.ConvertBack(schemeText);
                 }
                 //check if this line marks a note about the previous task
                 else if (line.StartsWith(TextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))

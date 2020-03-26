@@ -114,7 +114,7 @@ namespace tasklist
                 }
             }
 
-            FilterEmptyDays(tasklist);
+            // FilterEmptyDays(tasklist);
             tasklist.tasksByDay.Sort(
                 (x, y) => {
                     if(x.day.HasValue && y.day.HasValue) return x.day.Value.CompareTo(y.day.Value);

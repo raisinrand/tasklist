@@ -22,13 +22,13 @@ namespace tasklist
             }
             return res;
         }
-        public static string FormattedTaskNote(string note)
+        public static string FormattedTaskNote(string note, int indentLevel)
         {
             string[] lines = note.SplitLines();
             string res = "";
             for (int i = 0; i < lines.Length; i++)
             {
-                res += Environment.NewLine + TextDefs.Indent(2) + lines[i];
+                res += Environment.NewLine + TextDefs.Indent(indentLevel) + lines[i];
             }
             return res;
         }

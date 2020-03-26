@@ -65,9 +65,8 @@ namespace tasklist
 
             if (task.Notes != null)
             {
-                line += TextDefs.FormattedTaskNote(task.Notes);
+                line += TextDefs.FormattedTaskNote(task.Notes,2);
             }
-            //return line with last space chopped
             return line;
         }
         protected override Tasklist Parse(string[] lines)

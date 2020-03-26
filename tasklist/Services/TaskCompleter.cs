@@ -14,19 +14,19 @@ namespace tasklist
         public void Complete(DayTasks dayTasks, int index, DoneTasks done) {
             ITodoTask task = dayTasks.tasks[index];
             DateTime completeTime = DateTime.Now;
-            done.doneTaskLabels.Add(ConvertToLabel(task,completeTime.TimeOfDay));
+            done.doneTaskLabels.Add(ConvertToDone(task,completeTime.TimeOfDay));
             dayTasks.tasks.RemoveAt(index);
         }
-        public string ConvertToLabel(ITodoTask task, TimeSpan completeTime) {
+        public DoneTask ConvertToDone(ITodoTask task, TimeSpan completeTime) {
             string res = task.Name;
             res += " - " + todToStringConverter.Convert(completeTime);
-            return res;
+            return new DoneTask() { label = res };
         }
         
         public void Reschedule(Tasklist l, DayTasks dayTasks, int index, DateTime reassignDate, DoneTasks done) {
             Debug.Assert(reassignDate.Date.Equals(reassignDate));
             ITodoTask task = dayTasks.tasks[index];
-            done.rescheduledTaskLabels.Add(ConvertToLabelSkip(task));
+            done.rescheduledTaskLabels.Add(ConvertToDoneSkip(task));
             dayTasks.tasks.RemoveAt(index);
             DayTasks t = l.tasksByDay.Find(i => i.day == reassignDate);
             if(t == null) {
@@ -36,19 +36,19 @@ namespace tasklist
             task.ScheduledTime = null;
             t.tasks.Add(task);
         }
-        public string ConvertToLabelReschedule(ITodoTask task,DateTime date) {
+        public DoneTask ConvertToDoneReschedule(ITodoTask task,DateTime date) {
             string res = task.Name;
             res += " - " + dateTimeToStringConverter.Convert(date);
-            return res;
+            return new DoneTask() { label = res };
         }
         
         public void Skip(DayTasks dayTasks, int index, DoneTasks done) {
             ITodoTask task = dayTasks.tasks[index];
-            done.skippedTaskLabels.Add(ConvertToLabelSkip(task));
+            done.skippedTaskLabels.Add(ConvertToDoneSkip(task));
             dayTasks.tasks.RemoveAt(index);
         }
-        public string ConvertToLabelSkip(ITodoTask task) {
-            return task.Name;
+        public DoneTask ConvertToDoneSkip(ITodoTask task) {
+            return new DoneTask() { label = task.Name };
         }
     }
 }

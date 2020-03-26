@@ -66,7 +66,7 @@ namespace tasklist
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
-                string trimmedLine = line.TrimWhitespace();
+                string trimmedLine = line.Trim();
 
                 if (trimmedLine.EndsWith(TextDefs.repeatSchemeMarker))
                 {
@@ -104,7 +104,7 @@ namespace tasklist
             int currentSplit = 0;
 
             //set name
-            template.Name = dataSplit[currentSplit].TrimWhitespace();
+            template.Name = dataSplit[currentSplit].Trim();
             currentSplit++;
 
             //set scheduled time
@@ -113,7 +113,7 @@ namespace tasklist
             // TODO: if there are more properties, while loop this to allow any order for splits
             if (dataSplit.Length > currentSplit)
             {
-                string scheduledTimeText = dataSplit[currentSplit].TrimWhitespace();
+                string scheduledTimeText = dataSplit[currentSplit].Trim();
                 var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
                 if (time != null)
                 {
@@ -122,7 +122,7 @@ namespace tasklist
                 }
             }
             if(dataSplit.Length > currentSplit) {
-                string orderingText = dataSplit[currentSplit].TrimWhitespace();
+                string orderingText = dataSplit[currentSplit].Trim();
                 RecurringOrdering.Mode? mode = null;
                 if(orderingText.StartsWith(beforeOrderingMarker)) {
                     mode = RecurringOrdering.Mode.Before;
@@ -132,7 +132,7 @@ namespace tasklist
                     orderingText = orderingText.Substring(afterOrderingMarker.Length);
                 }
                 if(mode.HasValue) {
-                    template.Ordering = new RecurringOrdering {mode = mode.Value, targetPrefix = orderingText.TrimWhitespace()};            
+                    template.Ordering = new RecurringOrdering {mode = mode.Value, targetPrefix = orderingText.Trim()};            
                     currentSplit++;
                 }
             }

@@ -14,7 +14,7 @@ namespace tasklist
         public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime) {
             ITodoTask task = dayTasks.tasks[index];
             DateTime completeTime = DateTime.Now;
-            done.doneTaskLabels.Add(ConvertToDone(task,startTime,completeTime.TimeOfDay));
+            done.doneTaskLabels.Add(ConvertToDone(task,startTime ?? task.StartTime,completeTime.TimeOfDay));
             dayTasks.tasks.RemoveAt(index);
         }
         public DoneTask ConvertToDone(ITodoTask task, TimeSpan? startTime, TimeSpan completeTime) {

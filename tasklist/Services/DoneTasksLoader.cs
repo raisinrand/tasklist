@@ -55,7 +55,7 @@ namespace tasklist
             int indentLevel = 0;
             foreach(string line in lines) {
                 if(string.IsNullOrWhiteSpace(line)) continue;
-                string trimmedLine = line.TrimWhitespace();
+                string trimmedLine = line.Trim();
                 if(trimmedLine.StartsWith(TextDefs.rescheduledMarker)) {
                     mode = ParseMode.Rescheduled;
                     indentLevel = 1;

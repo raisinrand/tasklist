@@ -63,7 +63,7 @@ namespace tasklist
             //TODO: could also probably switch pattern match this and divide into funcs
             string input = value as string;
             if (input == null) return null;
-            input = input.TrimWhitespace();
+            input = input.Trim();
             if(input.Contains(orMarker)) {
                 int andIndex = input.IndexOf(orMarker);
                 RepeatScheme left = (RepeatScheme)ConvertBack(input.Substring(0,andIndex),parameter,culture);
@@ -72,7 +72,7 @@ namespace tasklist
             }
             else if (input.EndsWith(dayOfMonthMarker))
             {
-                int dayOfMonth = int.Parse(input.Substring(0, input.Length - dayOfMonthMarker.Length).TrimWhitespace());
+                int dayOfMonth = int.Parse(input.Substring(0, input.Length - dayOfMonthMarker.Length).Trim());
                 return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
             }
             // TODO: fix this, dirty

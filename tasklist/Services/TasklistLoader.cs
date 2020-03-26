@@ -60,6 +60,11 @@ namespace tasklist
         {
             string line = "";
             line += task.Name;
+
+            if(task.StartTime.HasValue) {
+                line += $" {timeOfDayToStringConverter.Convert(task.StartTime.Value)}";
+            }
+
             if (task.ScheduledTime.HasValue)
                 line += $" - {timeOfDayToStringConverter.Convert(task.ScheduledTime.Value)}";
 
@@ -76,7 +81,7 @@ namespace tasklist
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
-                string trimmedLine = line.TrimWhitespace();
+                string trimmedLine = line.Trim();
 
                 //check if this line marks a new day
                 DateTime dateMark;
@@ -145,14 +150,21 @@ namespace tasklist
             int currentSplit = 0;
 
             //set name
-            task.Name = dataSplit[currentSplit].TrimWhitespace();
+            task.Name = dataSplit[currentSplit].Trim();
+            //try to get start time from name
+            int startTimeIndex;
+            task.StartTime = GetStartTimeFromTaskName(task.Name,out startTimeIndex);
+            if(startTimeIndex >= 0) {
+                task.Name = task.Name.Remove(startTimeIndex).TrimEnd();
+            }
+
             currentSplit++;
 
             //set scheduled time
             //if this task is scheduled, check the next split for the scheduled time
             if (isScheduledDay && dataSplit.Length > currentSplit)
             {
-                string scheduledTimeText = dataSplit[currentSplit].TrimWhitespace();
+                string scheduledTimeText = dataSplit[currentSplit].Trim();
                 var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
                 if (time != null)
                 {
@@ -190,7 +202,7 @@ namespace tasklist
             //if there's another split, check it for duedate
             // if (dataSplit.Length > currentSplit)
             // {
-            //     string dueDateText = dataSplit[currentSplit].TrimWhitespace();
+            //     string dueDateText = dataSplit[currentSplit].Trim();
             //     DateTime dueDate = DateTime.Today;
             //     if (DateTime.TryParseExact(dueDateText, "MM/dd", null, DateTimeStyles.None, out dueDate))
             //     {
@@ -201,6 +213,22 @@ namespace tasklist
             // }
 
             return task;
+        }
+        // null if can't be found
+        TimeSpan? GetStartTimeFromTaskName(string name, out int index) {
+            int[] todLengthRange = timeOfDayToStringConverter.PossibleLengthRange();
+            for(int i = todLengthRange[0]; i < todLengthRange[1]; i++ ) {
+                int checkIndex = name.Length-i;
+                if(checkIndex < 0) break;
+                string potentialText = name.Substring(checkIndex);
+                TimeSpan? res = (TimeSpan?)timeOfDayToStringConverter.ConvertBack(potentialText);
+                if(res.HasValue) {
+                    index = checkIndex;
+                    return res;
+                }
+            }
+            index = -1;
+            return null;
         }
         void FilterEmptyDays(Tasklist tasklist)
         {

@@ -21,8 +21,5 @@ namespace tasklist
             }
             return res;
         }
-        public static string TrimWhitespace(this string s) {
-            return s.Trim(' ', '\t');
-        }
     }
 }

@@ -5,17 +5,26 @@ namespace tasklist
     // Pushes scheduled times for tasks.
     public class TasklistPusher
     {
-        public TasklistPusher() 
-        {}
+        public TasklistPusher()
+        { }
 
-        public void Push(DayTasks dayTasks, TimeSpan amount, TimeSpan? start, TimeSpan? end) {
-            foreach(var task in dayTasks.tasks) {
-                if(!task.ScheduledTime.HasValue) continue;
-                if(start.HasValue && task.ScheduledTime.Value < start.Value) continue;
-                if(end.HasValue && task.ScheduledTime.Value > end.Value) continue;
-                task.ScheduledTime += amount;
-                task.ScheduledTime = task.ScheduledTime.Value.WrapTimeOfDay();
+        public void Push(DayTasks dayTasks, TimeSpan amount, TimeSpan? start, TimeSpan? end)
+        {
+            foreach (var task in dayTasks.tasks)
+            {
+                task.StartTime = PushTime(task.StartTime, amount, start, end);
+                task.ScheduledTime = PushTime(task.ScheduledTime, amount, start, end);
             }
+        }
+        public TimeSpan? PushTime(TimeSpan? time, TimeSpan amount, TimeSpan? start, TimeSpan? end)
+        {
+            if (!time.HasValue
+                || (start.HasValue && time.Value < start.Value)
+                || (end.HasValue && time.Value > end.Value)
+            ) return time;
+            time += amount;
+            time = time.Value.WrapTimeOfDay();
+            return time;
         }
     }
 }

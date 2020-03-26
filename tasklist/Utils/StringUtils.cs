@@ -21,5 +21,8 @@ namespace tasklist
             }
             return res;
         }
+        public static string SubstringFrom(this string s, int start, int end) {
+            return s.Substring(start,end-start);
+        }
     }
 }

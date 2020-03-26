@@ -22,102 +22,107 @@ namespace tasklist
         const string dayOfMonthMarker = "of month";
         const string fromDateMarker = "from";
         const string orMarker = "or";
+        const string periodicIntervalMarker = "D";
+        const string periodicOffsetMarker = "O";
         public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
-            // TODO: this could be a switch
-            if (value is RepeatOr repeatOr) {
-                return $"{Convert(repeatOr.left,parameter,culture)} {orMarker} {Convert(repeatOr.right,parameter,culture)}";
+            switch(value) {
+                case RepeatOr repeat:
+                    return $"{Convert(repeat.left,parameter,culture)} {orMarker} {Convert(repeat.right,parameter,culture)}";
+                case RepeatPeriodic repeat:
+                    string s = repeat.dayInterval.ToString() + "D";
+                    int offset = ((int)(repeat.startDay - DateTime.MinValue).TotalDays) % repeat.dayInterval;
+                    if (offset > 0)
+                        s += offset + "O";
+                    return s;
+                case RepeatWeekly repeat:
+                    string r = "";
+                    foreach (var assignmentPair in repeat.DayAssignments)
+                    {
+                        if (assignmentPair.Value)
+                            r += dayIds[assignmentPair.Key];
+                    }
+                    return r;
+                case RepeatDayOfMonth repeat:
+                    return $"{repeat.dayOfMonth} {dayOfMonthMarker}";
+                case RepeatScheme repeat:
+                    return "";
+                default:
+                    return null;
             }
-            else if (value is RepeatPeriodic repeatPeriodic)
-            {
-                string s = repeatPeriodic.dayInterval.ToString() + "D";
-                int offset = ((int)(repeatPeriodic.startDay - DateTime.MinValue).TotalDays) % repeatPeriodic.dayInterval;
-                if (offset > 0)
-                    s += offset + "O";
-                return s;
-            }
-            else if (value is RepeatWeekly repeatWeekly)
-            {
-                string r = "";
-                foreach (var assignmentPair in repeatWeekly.DayAssignments)
-                {
-                    if (assignmentPair.Value)
-                        r += dayIds[assignmentPair.Key];
-                }
-                return r;
-            }
-            else if (value is RepeatDayOfMonth repeatDayOfMonth)
-            {
-                return $"{repeatDayOfMonth.dayOfMonth} {dayOfMonthMarker}";
-            }
-            // general placeholder
-            else if (value is RepeatScheme)
-            {
-                return "";
-            }
-            return null;
         }
         // allows whitespace
         public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)
         {
-            //TODO: could also probably switch pattern match this and divide into funcs
             string input = value as string;
             if (input == null) return null;
             input = input.Trim();
-            if(input.Contains(orMarker)) {
-                int andIndex = input.IndexOf(orMarker);
-                RepeatScheme left = (RepeatScheme)ConvertBack(input.Substring(0,andIndex),parameter,culture);
-                RepeatScheme right = (RepeatScheme)ConvertBack(input.Substring(andIndex+orMarker.Length),parameter,culture);
-                return new RepeatOr() { left = left, right = right };
+            switch(input) {
+                case "":
+                    return new RepeatNever();
+                case var s when s.Contains(orMarker):
+                    return ParseAsOr(s);
+                case var s when s.EndsWith(dayOfMonthMarker):
+                    return ParseAsDayOfMonth(s);
+                case var s when char.IsNumber(s[0]):
+                    return ParseAsPeriodic(input);
+                case var s:
+                    return ParseAsWeekly(s);
             }
-            else if (input.EndsWith(dayOfMonthMarker))
-            {
-                int dayOfMonth = int.Parse(input.Substring(0, input.Length - dayOfMonthMarker.Length).Trim());
-                return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
-            }
-            // TODO: fix this, dirty
-            else if (input.Length > 0 && char.IsNumber(input[0]))
-            {
-                int dayIntervalStartIndex = 0;
-                int dayIntervalEndIndex = input.IndexOf('D');
-                int dayOffsetStartIndex = dayIntervalEndIndex + 1;
-                int dayOffsetEndIndex = input.IndexOf('O');
-                int fromDayIndex = input.IndexOf(fromDateMarker);
-                int interval;
-                if (dayIntervalEndIndex >= 0 && int.TryParse(input.Substring(dayIntervalStartIndex, dayIntervalEndIndex - dayIntervalStartIndex), out interval))
-                {
-                    DateTime startDay = DateTime.MinValue;
-                    int dayOffset;
-                    if (dayOffsetEndIndex > dayIntervalEndIndex)
-                    {
-                        int.TryParse(input.Substring(dayOffsetStartIndex, dayOffsetEndIndex - dayOffsetStartIndex), out dayOffset);
-                        startDay = DateTime.MinValue + TimeSpan.FromDays(dayOffset);
-                    }
-                    else if (fromDayIndex >= 0)
-                    {
-                        string fromDateText = input.Substring(fromDayIndex+fromDateMarker.Length);
-                        startDay = (DateTime)dateToStringConverter.ConvertBack(fromDateText);
-                    }
-                    return new RepeatPeriodic() { dayInterval = interval, startDay = startDay};
-                }
-            }
-            else
-            {
-                bool foundAny = false;
-                Dictionary<DayOfWeek, bool> dayAssignments = new Dictionary<DayOfWeek, bool>();
-                foreach (DayOfWeek day in dayIds.Keys)
-                {
-                    bool found = input.Contains(dayIds[day]);
-                    foundAny |= found;
-                    dayAssignments.Add(day, found);
-                }
-                if (foundAny)
-                {
-                    return new RepeatWeekly(dayAssignments);
-                }
-            }
-            return new RepeatNever();
         }
-
+        RepeatOr ParseAsOr(string s) {
+            int andIndex = s.IndexOf(orMarker);
+            RepeatScheme left = (RepeatScheme)ConvertBack(s.Substring(0,andIndex));
+            RepeatScheme right = (RepeatScheme)ConvertBack(s.Substring(andIndex+orMarker.Length));
+            return new RepeatOr() { left = left, right = right };
+        }
+        RepeatDayOfMonth ParseAsDayOfMonth(string s) {
+            int dayOfMonth = int.Parse(s.Substring(0, s.Length - dayOfMonthMarker.Length).Trim());
+            return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
+        }
+        // expects no whitespace and not null
+        RepeatWeekly ParseAsWeekly(string s) {
+            Dictionary<DayOfWeek, bool> dayAssignments = new Dictionary<DayOfWeek, bool>();
+            foreach (DayOfWeek day in dayIds.Keys)
+            {
+                string id = dayIds[day];
+                int index = s.IndexOf(id);
+                bool found = index >= 0;
+                dayAssignments.Add(day, found);
+                if(found) {
+                    s = s.Remove(index,id.Length);
+                }
+            }
+            if (s == "")
+            {
+                return new RepeatWeekly(dayAssignments);
+            }
+            return null;
+        }
+        RepeatPeriodic ParseAsPeriodic(string s) {
+            int dayIntervalStartIndex = 0;
+            int dayIntervalEndIndex = s.IndexOf(periodicIntervalMarker);
+            int dayOffsetStartIndex = dayIntervalEndIndex + periodicIntervalMarker.Length;
+            int dayOffsetEndIndex = s.IndexOf(periodicOffsetMarker);
+            int fromDayIndex = s.IndexOf(fromDateMarker);
+            int interval;
+            if (dayIntervalEndIndex >= 0 && int.TryParse(s.SubstringFrom(dayIntervalStartIndex, dayIntervalEndIndex), out interval))
+            {
+                DateTime startDay = DateTime.MinValue;
+                int dayOffset;
+                if (dayOffsetEndIndex > dayIntervalEndIndex)
+                {
+                    int.TryParse(s.SubstringFrom(dayOffsetStartIndex, dayOffsetEndIndex), out dayOffset);
+                    startDay = DateTime.MinValue + TimeSpan.FromDays(dayOffset);
+                }
+                else if (fromDayIndex >= 0)
+                {
+                    string fromDateText = s.Substring(fromDayIndex+fromDateMarker.Length);
+                    startDay = (DateTime)dateToStringConverter.ConvertBack(fromDateText);
+                }
+                return new RepeatPeriodic() { dayInterval = interval, startDay = startDay};
+            }
+            return null;
+        }
     }
 }

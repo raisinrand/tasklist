@@ -11,14 +11,17 @@ namespace tasklist
         public TaskCompleter()
         {}
 
-        public void Complete(DayTasks dayTasks, int index, DoneTasks done) {
+        public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime) {
             ITodoTask task = dayTasks.tasks[index];
             DateTime completeTime = DateTime.Now;
-            done.doneTaskLabels.Add(ConvertToDone(task,completeTime.TimeOfDay));
+            done.doneTaskLabels.Add(ConvertToDone(task,startTime,completeTime.TimeOfDay));
             dayTasks.tasks.RemoveAt(index);
         }
-        public DoneTask ConvertToDone(ITodoTask task, TimeSpan completeTime) {
+        public DoneTask ConvertToDone(ITodoTask task, TimeSpan? startTime, TimeSpan completeTime) {
             string res = task.Name;
+            if(startTime.HasValue) {
+                res += $" {todToStringConverter.Convert(startTime.Value)}";
+            }
             res += " - " + todToStringConverter.Convert(completeTime);
             return new DoneTask() { label = res };
         }

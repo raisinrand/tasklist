@@ -64,6 +64,8 @@ namespace tasklist
         {
             [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
             public string Task { get; set; }
+            [Option('s', "start", Default = null, HelpText = "Time that the task was started.")]
+            public string startTime { get; set; }
         }
         [Verb("reschedule", HelpText = "Reassigns the specified task.")]
         class RescheduleOptions : BaseOptions
@@ -175,7 +177,8 @@ namespace tasklist
             //TODO: maybe exception in this case?
             if(!TryCurrentDay(l,out targetDay)) return;
             int index = ParseIndexExcept(targetDay,opts.Task);
-            c.Complete(targetDay,index,d);
+            TimeSpan? start = ArgConvert.ParseTimeOfDay(opts.startTime);
+            c.Complete(targetDay,index,d,start);
             tasklistLoader.Save(l);
             doneLoader.Save(d);
         }

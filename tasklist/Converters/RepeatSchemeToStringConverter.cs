@@ -21,9 +21,14 @@ namespace tasklist
         }
         const string dayOfMonthMarker = "of month";
         const string fromDateMarker = "from";
+        const string orMarker = "or";
         public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
-            if (value is RepeatPeriodic repeatPeriodic)
+            // TODO: this could be a switch
+            if (value is RepeatOr repeatOr) {
+                return $"{Convert(repeatOr.left,parameter,culture)} {orMarker} {Convert(repeatOr.right,parameter,culture)}";
+            }
+            else if (value is RepeatPeriodic repeatPeriodic)
             {
                 string s = repeatPeriodic.dayInterval.ToString() + "D";
                 int offset = ((int)(repeatPeriodic.startDay - DateTime.MinValue).TotalDays) % repeatPeriodic.dayInterval;
@@ -52,18 +57,26 @@ namespace tasklist
             }
             return null;
         }
+        // allows whitespace
         public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)
         {
+            //TODO: could also probably switch pattern match this and divide into funcs
             string input = value as string;
             if (input == null) return null;
             input = input.TrimWhitespace();
-            if (input.EndsWith(dayOfMonthMarker))
+            if(input.Contains(orMarker)) {
+                int andIndex = input.IndexOf(orMarker);
+                RepeatScheme left = (RepeatScheme)ConvertBack(input.Substring(0,andIndex),parameter,culture);
+                RepeatScheme right = (RepeatScheme)ConvertBack(input.Substring(andIndex+orMarker.Length),parameter,culture);
+                return new RepeatOr() { left = left, right = right };
+            }
+            else if (input.EndsWith(dayOfMonthMarker))
             {
                 int dayOfMonth = int.Parse(input.Substring(0, input.Length - dayOfMonthMarker.Length).TrimWhitespace());
                 return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
             }
             // TODO: fix this, dirty
-            if (input.Length > 0 && char.IsNumber(input[0]))
+            else if (input.Length > 0 && char.IsNumber(input[0]))
             {
                 int dayIntervalStartIndex = 0;
                 int dayIntervalEndIndex = input.IndexOf('D');

@@ -4,9 +4,11 @@ using System.Globalization;
 
 namespace tasklist
 {
+    // TODO: clean all of this
     public class RepeatSchemeToStringConverter : IConverter
     {
-        Dictionary<DayOfWeek,string> dayIds = new Dictionary<DayOfWeek, string>();
+        Dictionary<DayOfWeek, string> dayIds = new Dictionary<DayOfWeek, string>();
+        DateToStringConverter dateToStringConverter = new DateToStringConverter();
         public RepeatSchemeToStringConverter()
         {
             dayIds.Add(DayOfWeek.Monday, "M");
@@ -18,31 +20,34 @@ namespace tasklist
             dayIds.Add(DayOfWeek.Sunday, "Su");
         }
         const string dayOfMonthMarker = "of month";
+        const string fromDateMarker = "from";
         public object Convert(object value, object parameter = null, CultureInfo culture = null)
         {
-            if(value is RepeatPeriodic repeatPeriodic)
+            if (value is RepeatPeriodic repeatPeriodic)
             {
                 string s = repeatPeriodic.dayInterval.ToString() + "D";
                 int offset = ((int)(repeatPeriodic.startDay - DateTime.MinValue).TotalDays) % repeatPeriodic.dayInterval;
-                if(offset > 0)
+                if (offset > 0)
                     s += offset + "O";
-                return s; 
+                return s;
             }
-            else if(value is RepeatWeekly repeatWeekly)
+            else if (value is RepeatWeekly repeatWeekly)
             {
                 string r = "";
                 foreach (var assignmentPair in repeatWeekly.DayAssignments)
                 {
-                    if(assignmentPair.Value)
-                        r+=dayIds[assignmentPair.Key];
+                    if (assignmentPair.Value)
+                        r += dayIds[assignmentPair.Key];
                 }
                 return r;
             }
-            else if(value is RepeatDayOfMonth repeatDayOfMonth) {
-                return $"{repeatDayOfMonth.dayOfMonth} {dayOfMonthMarker}"; 
+            else if (value is RepeatDayOfMonth repeatDayOfMonth)
+            {
+                return $"{repeatDayOfMonth.dayOfMonth} {dayOfMonthMarker}";
             }
             // general placeholder
-            else if (value is RepeatScheme) {
+            else if (value is RepeatScheme)
+            {
                 return "";
             }
             return null;
@@ -50,49 +55,56 @@ namespace tasklist
         public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)
         {
             string input = value as string;
-            if(input == null) return null;
+            if (input == null) return null;
             input = input.TrimWhitespace();
-            if(input.EndsWith(dayOfMonthMarker)) {
-                int dayOfMonth = int.Parse(input.Substring(0,input.Length-dayOfMonthMarker.Length).TrimWhitespace());
+            if (input.EndsWith(dayOfMonthMarker))
+            {
+                int dayOfMonth = int.Parse(input.Substring(0, input.Length - dayOfMonthMarker.Length).TrimWhitespace());
                 return new RepeatDayOfMonth() { dayOfMonth = dayOfMonth };
             }
-            if(input.Length > 0 && char.IsNumber(input[0]))
+            // TODO: fix this, dirty
+            if (input.Length > 0 && char.IsNumber(input[0]))
             {
                 int dayIntervalStartIndex = 0;
                 int dayIntervalEndIndex = input.IndexOf('D');
-                int dayOffsetStartIndex = dayIntervalEndIndex+1;
+                int dayOffsetStartIndex = dayIntervalEndIndex + 1;
                 int dayOffsetEndIndex = input.IndexOf('O');
+                int fromDayIndex = input.IndexOf(fromDateMarker);
                 int interval;
                 if (dayIntervalEndIndex >= 0 && int.TryParse(input.Substring(dayIntervalStartIndex, dayIntervalEndIndex - dayIntervalStartIndex), out interval))
                 {
-                    //int dayOffset = ((int)(DateTime.Today - DateTime.MinValue).TotalDays) % interval;
-                    int dayOffset = 0;
+                    DateTime startDay = DateTime.MinValue;
+                    int dayOffset;
                     if (dayOffsetEndIndex > dayIntervalEndIndex)
                     {
                         int.TryParse(input.Substring(dayOffsetStartIndex, dayOffsetEndIndex - dayOffsetStartIndex), out dayOffset);
+                        startDay = DateTime.MinValue + TimeSpan.FromDays(dayOffset);
                     }
-                    RepeatPeriodic repeatPeriodic = new RepeatPeriodic();
-                    repeatPeriodic.startDay = DateTime.MinValue + TimeSpan.FromDays(dayOffset);
-                    repeatPeriodic.dayInterval = interval;
-                    return repeatPeriodic;
+                    else if (fromDayIndex >= 0)
+                    {
+                        string fromDateText = input.Substring(fromDayIndex+fromDateMarker.Length);
+                        startDay = (DateTime)dateToStringConverter.ConvertBack(fromDateText);
+                    }
+                    return new RepeatPeriodic() { dayInterval = interval, startDay = startDay};
                 }
             }
             else
             {
                 bool foundAny = false;
                 Dictionary<DayOfWeek, bool> dayAssignments = new Dictionary<DayOfWeek, bool>();
-                foreach(DayOfWeek day in dayIds.Keys)
+                foreach (DayOfWeek day in dayIds.Keys)
                 {
                     bool found = input.Contains(dayIds[day]);
                     foundAny |= found;
                     dayAssignments.Add(day, found);
                 }
-                if(foundAny)
+                if (foundAny)
                 {
                     return new RepeatWeekly(dayAssignments);
                 }
             }
             return new RepeatNever();
         }
+
     }
 }

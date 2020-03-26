@@ -132,6 +132,7 @@ namespace tasklist
                 populator.Populate(targetDay, recurring);
             }
             tasklistLoader.Save(l);
+            recurringLoader.Save(recurring);
         }
 
 

@@ -255,7 +255,7 @@ namespace tasklist
 
         static int ParseIndexExcept(DayTasks targetDay, string prefix) {
             int index;
-            if(!ArgConvert.TryParseTaskIndexFromPrefix(targetDay,prefix,out index)) {
+            if(!TasklistUtils.TryParseTaskIndexFromPrefix(targetDay,prefix,out index)) {
                 throw new ArgumentException($"Could not find task from prefix '{prefix}'");
             }
             return index;

@@ -42,11 +42,22 @@ namespace tasklist
         string WriteTodoTaskRepeatedTemplate(RecurringTaskTemplate template)
         {
             RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
-            string line = template.Name + " ";
+            string line = template.Name;
             if (template.TimeOfDay != null)
-                line += $"- {timeOfDayToStringConverter.Convert(template.TimeOfDay)} ";
-            //return line with last space chopped off
-            return line.Substring(0, line.Length - 1);
+                line += $" - {timeOfDayToStringConverter.Convert(template.TimeOfDay)}";
+            if(template.Ordering != null) {
+                string modeText = null;
+                switch(template.Ordering.mode) {
+                    case RecurringOrdering.Mode.After:
+                        modeText = afterOrderingMarker;
+                    break;
+                    case RecurringOrdering.Mode.Before:
+                        modeText = beforeOrderingMarker;
+                    break;
+                }
+                line += $" - {modeText} {template.Ordering.targetPrefix}";
+            }
+            return line;
         }
         protected override RecurringTasks Parse(string[] lines)
         {
@@ -80,6 +91,8 @@ namespace tasklist
             }
             return recurring;
         }
+        const string beforeOrderingMarker = "before";
+        const string afterOrderingMarker = "after";
         RecurringTaskTemplate ParseRecurringTaskTemplate(string input, RepeatScheme scheme)
         {
             RecurringTaskTemplate template = new RecurringTaskTemplate()
@@ -96,6 +109,8 @@ namespace tasklist
 
             //set scheduled time
             //if this task is scheduled, check the next split for the scheduled time
+
+            // TODO: if there are more properties, while loop this to allow any order for splits
             if (dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].TrimWhitespace();
@@ -104,7 +119,28 @@ namespace tasklist
                 {
                     template.TimeOfDay = (TimeSpan)time;
                     currentSplit++;
-                } else throw new ArgumentException("Failed to parse time of day while loading recurring tasks.");
+                }
+            }
+            if(dataSplit.Length > currentSplit) {
+                string orderingText = dataSplit[currentSplit].TrimWhitespace();
+                RecurringOrdering.Mode? mode = null;
+                if(orderingText.StartsWith(beforeOrderingMarker)) {
+                    mode = RecurringOrdering.Mode.Before;
+                    orderingText = orderingText.Substring(beforeOrderingMarker.Length);
+                } else if(orderingText.StartsWith(afterOrderingMarker)) {
+                    mode = RecurringOrdering.Mode.After;
+                    orderingText = orderingText.Substring(afterOrderingMarker.Length);
+                }
+                if(mode.HasValue) {
+                    template.Ordering = new RecurringOrdering {mode = mode.Value, targetPrefix = orderingText.TrimWhitespace()};            
+                    currentSplit++;
+                }
+            }
+            if(dataSplit.Length > currentSplit) {
+                throw new ArgumentException(
+                    $"Failed to fully parse properties for recurring template {template.Name}"
+                    +$" while loading recurring templates."
+                    );
             }
             return template;
         }

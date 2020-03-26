@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace tasklist
 {
@@ -15,5 +11,7 @@ namespace tasklist
         public TimeSpan? TimeOfDay { get; set; }
         public string Notes { get; set; }
         public RepeatScheme RepeatScheme { get; set; }
+        // can be null
+        public RecurringOrdering Ordering { get; set; }
     }
 }

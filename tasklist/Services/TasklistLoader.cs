@@ -217,9 +217,9 @@ namespace tasklist
         // null if can't be found
         TimeSpan? GetStartTimeFromTaskName(string name, out int index) {
             int[] todLengthRange = timeOfDayToStringConverter.PossibleLengthRange();
-            for(int i = todLengthRange[0]; i < todLengthRange[1]; i++ ) {
+            for(int i = todLengthRange[1]-1; i >= todLengthRange[0]; i-- ) {
                 int checkIndex = name.Length-i;
-                if(checkIndex < 0) break;
+                if(checkIndex < 0) continue;
                 string potentialText = name.Substring(checkIndex);
                 TimeSpan? res = (TimeSpan?)timeOfDayToStringConverter.ConvertBack(potentialText);
                 if(res.HasValue) {

@@ -11,7 +11,7 @@ namespace tasklist
         {
             if(!(value as TimeSpan?).HasValue) return null;
             TimeSpan time = (TimeSpan)value;
-            Debug.Assert(time > TimeSpan.Zero);
+            Debug.Assert(time >= TimeSpan.Zero);
             return (new DateTime() + time).ToString(format);
         }
         public object ConvertBack(object value, object parameter = null, CultureInfo culture = null)

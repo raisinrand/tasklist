@@ -36,6 +36,7 @@ namespace tasklist
                 t = new DayTasks() { day = reassignDate };
                 l.tasksByDay.Add(t);
             }
+            task.StartTime = null;
             task.ScheduledTime = null;
             t.tasks.Add(task);
         }

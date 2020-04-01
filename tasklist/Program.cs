@@ -82,24 +82,23 @@ namespace tasklist
             public string Task { get; set; }
         }
 
-        static int Main(string[] args)
+        static void Main(string[] args)
         {
             try
             {
-                return Parser.Default.ParseArguments<
+                Parser.Default.ParseArguments<
                 PopulateOptions,
                 PushOptions,
                 CompleteOptions,
                 RescheduleOptions,
                 SkipOptions
                 >(args)
-                    .MapResult(
-                    (PopulateOptions opts) => RunPopulateAndReturnExitCode(opts),
-                    (PushOptions opts) => RunPushAndReturnExitCode(opts),
-                    (CompleteOptions opts) => RunCompleteAndReturnExitCode(opts),
-                    (RescheduleOptions opts) => RunRescheduleAndReturnExitCode(opts),
-                    (SkipOptions opts) => RunSkipAndReturnExitCode(opts),
-                    errs => 1);
+                    .WithParsed<PopulateOptions>(opts => RunPopulate(opts))
+                    .WithParsed<PushOptions>(opts => RunPush(opts))
+                    .WithParsed<CompleteOptions>(opts => RunComplete(opts))
+                    .WithParsed<RescheduleOptions>(opts => RunReschedule(opts))
+                    .WithParsed<SkipOptions>(opts => RunSkip(opts))
+                    .WithNotParsed(errs => {});
             }
             catch
             {
@@ -109,13 +108,12 @@ namespace tasklist
             }
         }
 
-        static int RunPopulateAndReturnExitCode(PopulateOptions opts)
-        {
-            RunPopulate(opts);
-            Console.WriteLine("Done.");
-            return 1;
-        }
         static void RunPopulate(PopulateOptions opts)
+        {
+            Populate(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Populate(PopulateOptions opts)
         {
             var baseOpts = new ProcessedBaseOptions(opts);
             var recurringLoader = new RecurringTasksLoader(baseOpts.recurringPath);
@@ -138,13 +136,12 @@ namespace tasklist
         }
 
 
-        static int RunPushAndReturnExitCode(PushOptions opts)
-        {
-            RunPush(opts);
-            Console.WriteLine("Done.");
-            return 1;
-        }
         static void RunPush(PushOptions opts)
+        {
+            Push(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Push(PushOptions opts)
         {
             var baseOpts = new ProcessedBaseOptions(opts);
             TasklistLoader tasklistLoader = new TasklistLoader(baseOpts.path);
@@ -159,13 +156,12 @@ namespace tasklist
             tasklistLoader.Save(l);
         }
 
-        static int RunCompleteAndReturnExitCode(CompleteOptions opts)
-        {
-            RunComplete(opts);
-            Console.WriteLine("Done.");
-            return 1;
-        }
         static void RunComplete(CompleteOptions opts)
+        {
+            Complete(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Complete(CompleteOptions opts)
         {
             var baseOpts = new ProcessedBaseOptions(opts);
             var tasklistLoader = new TasklistLoader(baseOpts.path);
@@ -183,13 +179,12 @@ namespace tasklist
             doneLoader.Save(d);
         }
  
-        static int RunRescheduleAndReturnExitCode(RescheduleOptions opts)
-        {
-            RunReschedule(opts);
-            Console.WriteLine("Done.");
-            return 1;
-        }
         static void RunReschedule(RescheduleOptions opts)
+        {
+            Reschedule(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Reschedule(RescheduleOptions opts)
         {
             var baseOpts = new ProcessedBaseOptions(opts);
             var tasklistLoader = new TasklistLoader(baseOpts.path);
@@ -208,13 +203,12 @@ namespace tasklist
             doneLoader.Save(d);
         }
 
-        static int RunSkipAndReturnExitCode(SkipOptions opts)
-        {
-            RunSkip(opts);
-            Console.WriteLine("Done.");
-            return 1;
-        }
         static void RunSkip(SkipOptions opts)
+        {
+            Skip(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Skip(SkipOptions opts)
         {
             var baseOpts = new ProcessedBaseOptions(opts);
             var tasklistLoader = new TasklistLoader(baseOpts.path);

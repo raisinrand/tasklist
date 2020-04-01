@@ -21,7 +21,7 @@ namespace tasklist.CommandLine
                 return (TimeSpan?)ConvertWith(s, timeSpanToStringConverter);
             }
             catch(ArgumentException){
-                throw new ArgumentException("Failed to parse time of day.");
+                throw new ArgumentException("Failed to parse time span.");
             }
         }
         public static DateTime? ParseDateTime(string s) {
@@ -30,7 +30,7 @@ namespace tasklist.CommandLine
                 return (DateTime?)ConvertWith(s, dateTimeToStringConverter);
             }
             catch(ArgumentException){
-                throw new ArgumentException("Failed to parse time of day.");
+                throw new ArgumentException("Failed to parse date.");
             }
         }
 

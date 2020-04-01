@@ -21,17 +21,15 @@ namespace tasklist
         protected override string[] Write(RecurringTasks recurring)
         {
             List<string> lines = new List<string>();
-            List<RecurringTaskTemplate> l = new List<RecurringTaskTemplate>(recurring.repeatedTasks);
-            while(l.Count > 0) {
-                RecurringTaskTemplate current = l[0];
-                RepeatScheme scheme = current.RepeatScheme;
-                lines.Add(RepeatSchemeLabel(scheme));
-                var matches = l.Where(i => i.RepeatScheme.Equals(scheme)).ToArray();
-                foreach(var template in matches){
-                    string line = TextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(template);
-                    lines.Add(line);
-                    l.Remove(template);
+            RepeatScheme scheme = new RepeatNever();
+            for(int i = 0; i < recurring.repeatedTasks.Count; i++) {
+                var current = recurring.repeatedTasks[i];
+                if(scheme != current.RepeatScheme) {
+                    scheme = current.RepeatScheme;
+                    lines.Add(RepeatSchemeLabel(scheme));
                 }
+                string line = TextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(current);
+                lines.Add(line);
             }
             return lines.ToArray();
         }

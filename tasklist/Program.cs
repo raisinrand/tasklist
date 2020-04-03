@@ -16,7 +16,7 @@ namespace tasklist
 
         // TODO: this needs work. don't like how we're handling this at all.
         class BaseOptions {
-            [Option('d', "directory", Default = defaultDir, HelpText = "The directory to use for relative paths.")]
+            [Option('p', "directory", Default = defaultDir, HelpText = "The directory to use for relative paths.")]
             public string directory { get; set; }
             [Option('f', "filename", Default = defaultFileName, HelpText = "The name of the tasklist file.")]
             public string FileName { get; set; }
@@ -47,6 +47,8 @@ namespace tasklist
         {
             [Option('a', "all", Default = false, HelpText = "Applies to all days instead of just the current day.")]
             public bool All { get; set; }
+            [Option('d', "day", Default = null, HelpText= "Which day to populate.")]
+            public string Day {get;set;}
         }
         [Verb("push",
             HelpText = "Pushes all scheduled times back by a set amount.")]
@@ -127,8 +129,14 @@ namespace tasklist
             }
             else
             {
-                DayTasks targetDay;
-                if(!TryCurrentDay(l,out targetDay)) return;
+                DayTasks targetDay = null;
+                if(opts.Day != null) {
+                    DateTime date = ArgConvert.ParseDate(opts.Day).Value;
+                    targetDay = GetDayTasks(l,date);
+                }
+                else {
+                    if(!TryCurrentDay(l,out targetDay)) return;
+                }
                 populator.Populate(targetDay, recurring);
             }
             tasklistLoader.Save(l);
@@ -197,7 +205,7 @@ namespace tasklist
             int index = ParseIndexExcept(targetDay,opts.Task);
             DateTime date;
             if(opts.ToDate == null) date = targetDay.day.Value.AddDays(1);
-            else date = ArgConvert.ParseDateTime(opts.ToDate).Value;
+            else date = ArgConvert.ParseDate(opts.ToDate).Value;
             c.Reschedule(l,targetDay,index,date,d);
             tasklistLoader.Save(l);
             doneLoader.Save(d);
@@ -248,6 +256,17 @@ namespace tasklist
             if (!targetDay.day.HasValue) return false;
             current = targetDay;
             return true;
+        }
+        
+        // returns true if current day is successfully found
+        static DayTasks GetDayTasks(Tasklist l, DateTime date) {
+            var f = l.tasksByDay.Find(i => i.day == date);
+            if(f == null) {
+                var r = new DayTasks() { day = date };
+                l.tasksByDay.Add(r);
+                return r;
+            }
+            return f;
         }
 
         static int ParseIndexExcept(DayTasks targetDay, string prefix) {

@@ -24,7 +24,7 @@ namespace tasklist.CommandLine
                 throw new ArgumentException("Failed to parse time span.");
             }
         }
-        public static DateTime? ParseDateTime(string s) {
+        public static DateTime? ParseDate(string s) {
             var dateTimeToStringConverter = new DateToStringConverter();
             try {
                 return (DateTime?)ConvertWith(s, dateTimeToStringConverter);

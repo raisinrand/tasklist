@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using CommandLine;
-using tasklist.CommandLine;
+using AC = ArgConvert;
 
 namespace tasklist
 {
@@ -57,9 +57,9 @@ namespace tasklist
             [Value(0, MetaName = "amount", HelpText = "The amount of time to push scheduled times back by.")]
             public string Amount { get; set; }
             [Option('s', "start", Default = null, HelpText = "Starting time of the range to push back.")]
-            public string startTime { get; set; }
+            public string StartTime { get; set; }
             [Option('e', "end", Default = null, HelpText = "Ending time of the range to push back.")]
-            public string endTime { get; set; }
+            public string EndTime { get; set; }
         }
         [Verb("complete", HelpText = "Marks the specified task as complete and removes it from the tasklist.")]
         class CompleteOptions : BaseOptions
@@ -67,7 +67,9 @@ namespace tasklist
             [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
             public string Task { get; set; }
             [Option('s', "start", Default = null, HelpText = "Time that the task was started.")]
-            public string startTime { get; set; }
+            public string StartTime { get; set; }
+            [Option('t', "time", Default = null, HelpText = "Time that the task was complete.")]
+            public string Time { get; set; }
         }
         [Verb("reschedule", HelpText = "Reassigns the specified task.")]
         class RescheduleOptions : BaseOptions
@@ -131,7 +133,7 @@ namespace tasklist
             {
                 DayTasks targetDay = null;
                 if(opts.Day != null) {
-                    DateTime date = ArgConvert.ParseDate(opts.Day).Value;
+                    DateTime date = AC.ArgConvert.ParseDate(opts.Day).Value;
                     targetDay = GetDayTasks(l,date);
                 }
                 else {
@@ -157,9 +159,9 @@ namespace tasklist
             TasklistPusher pusher = new TasklistPusher();
             DayTasks targetDay;
             if(!TryCurrentDay(l,out targetDay)) return;
-            TimeSpan amount = ArgConvert.ParseTimeSpan(opts.Amount).Value;
-            TimeSpan? start = ArgConvert.ParseTimeOfDay(opts.startTime);
-            TimeSpan? end = ArgConvert.ParseTimeOfDay(opts.endTime);
+            TimeSpan amount = AC.ArgConvert.ParseTimeSpan(opts.Amount).Value;
+            TimeSpan? start = AC.ArgConvert.ParseTimeOfDay(opts.StartTime);
+            TimeSpan? end = AC.ArgConvert.ParseTimeOfDay(opts.EndTime);
             pusher.Push(targetDay, amount, start, end);
             tasklistLoader.Save(l);
         }
@@ -181,8 +183,9 @@ namespace tasklist
             //TODO: maybe exception in this case?
             if(!TryCurrentDay(l,out targetDay)) return;
             int index = ParseIndexExcept(targetDay,opts.Task);
-            TimeSpan? start = ArgConvert.ParseTimeOfDay(opts.startTime);
-            c.Complete(targetDay,index,d,start);
+            TimeSpan? start = AC.ArgConvert.ParseTimeOfDay(opts.StartTime);
+            TimeSpan time = AC.ArgConvert.ParseTimeOfDay(opts.Time) ?? DateTime.Now.TimeOfDay;
+            c.Complete(targetDay,index,d,start,time);
             tasklistLoader.Save(l);
             doneLoader.Save(d);
         }
@@ -205,7 +208,7 @@ namespace tasklist
             int index = ParseIndexExcept(targetDay,opts.Task);
             DateTime date;
             if(opts.ToDate == null) date = targetDay.day.Value.AddDays(1);
-            else date = ArgConvert.ParseDate(opts.ToDate).Value;
+            else date = AC.ArgConvert.ParseDate(opts.ToDate).Value;
             c.Reschedule(l,targetDay,index,date,d);
             tasklistLoader.Save(l);
             doneLoader.Save(d);

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using ArgConvert.Converters;
 
 namespace tasklist
 {
@@ -11,10 +12,9 @@ namespace tasklist
         public TaskCompleter()
         {}
 
-        public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime) {
+        public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime, TimeSpan completeTime) {
             ITodoTask task = dayTasks.tasks[index];
-            DateTime completeTime = DateTime.Now;
-            done.doneTaskLabels.Add(ConvertToDone(task,startTime ?? task.StartTime,completeTime.TimeOfDay));
+            done.doneTaskLabels.Add(ConvertToDone(task,startTime ?? task.StartTime,completeTime));
             dayTasks.tasks.RemoveAt(index);
         }
         public DoneTask ConvertToDone(ITodoTask task, TimeSpan? startTime, TimeSpan completeTime) {

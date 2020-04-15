@@ -1,6 +1,0 @@
-this folder contains classes that only exist to convert strings in command line options.
-there is probably a nicer way to specify your own parsing method (there should be at least) but idk what it is with this api.
-
-if i figure it out or they add that, switch to doing it that way. doesn't really matter tho.
-
-my whole converter system is wack

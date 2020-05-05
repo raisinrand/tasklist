@@ -29,16 +29,17 @@ namespace tasklist
                     scheme = current.RepeatScheme;
                     lines.Add(RepeatSchemeLabel(scheme));
                 }
-                string line = TextDefs.Indent(1) + WriteTodoTaskRepeatedTemplate(current);
-                lines.Add(line);
+                string[] taskLines = TextDefs.Indent(1, WriteTodoTaskRepeatedTemplate(current));
+                lines.AddRange(taskLines);
             }
+
             return lines.ToArray();
         }
         string RepeatSchemeLabel(RepeatScheme scheme)
         {
             return $"{repeatSchemeToStringConverter.Convert(scheme)}:";
         }
-        string WriteTodoTaskRepeatedTemplate(RecurringTaskTemplate template)
+        string[] WriteTodoTaskRepeatedTemplate(RecurringTaskTemplate template)
         {
             RepeatSchemeToStringConverter repeatSchemeToStringConverter = new RepeatSchemeToStringConverter();
             string line = template.Name;
@@ -56,7 +57,11 @@ namespace tasklist
                 }
                 line += $" - {modeText} {template.Ordering.targetPrefix}";
             }
-            return line;
+            if (template.Notes != null)
+            {
+                line += TextDefs.FormattedTaskNote(template.Notes, 1);
+            }
+            return line.SplitLines();
         }
         protected override RecurringTasks Parse(string[] lines)
         {

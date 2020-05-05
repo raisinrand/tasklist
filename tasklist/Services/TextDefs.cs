@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArgConvert.Converters;
 
 namespace tasklist
 {
@@ -42,6 +43,25 @@ namespace tasklist
                 i++;
             }
             return res;
+        }
+
+
+        // maybe move this
+        // null if can't be found
+        public static TimeSpan? GetStartTimeFromTaskName(string name, TimeOfDayToStringConverter converter, out int index) {
+            int[] todLengthRange = converter.PossibleLengthRange();
+            for(int i = todLengthRange[1]-1; i >= todLengthRange[0]; i-- ) {
+                int checkIndex = name.Length-i;
+                if(checkIndex < 0) continue;
+                string potentialText = name.Substring(checkIndex);
+                TimeSpan? res = (TimeSpan?)converter.ConvertBack(potentialText);
+                if(res.HasValue) {
+                    index = checkIndex;
+                    return res;
+                }
+            }
+            index = -1;
+            return null;
         }
     }
 }

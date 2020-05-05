@@ -12,24 +12,18 @@ namespace tasklist
         public TaskCompleter()
         {}
 
+        public DoneTask ConvertToDone(ITodoTask task, TimeSpan? startTime = null, TimeSpan? completeTime = null) {
+            return new DoneTask() { Name = task.Name, StartTime = startTime, CompleteTime = completeTime  };
+        }
         public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime, TimeSpan completeTime) {
             ITodoTask task = dayTasks.tasks[index];
-            done.doneTaskLabels.Add(ConvertToDone(task,startTime ?? task.StartTime,completeTime));
+            done.AddTask(ConvertToDone(task,startTime ?? task.StartTime,completeTime),DoneType.Done);
             dayTasks.tasks.RemoveAt(index);
         }
-        public DoneTask ConvertToDone(ITodoTask task, TimeSpan? startTime, TimeSpan completeTime) {
-            string res = task.Name;
-            if(startTime.HasValue) {
-                res += $" {todToStringConverter.Convert(startTime.Value)}";
-            }
-            res += " - " + todToStringConverter.Convert(completeTime);
-            return new DoneTask() { label = res };
-        }
-        
         public void Reschedule(Tasklist l, DayTasks dayTasks, int index, DateTime reassignDate, DoneTasks done) {
             Debug.Assert(reassignDate.Date.Equals(reassignDate));
             ITodoTask task = dayTasks.tasks[index];
-            done.rescheduledTaskLabels.Add(ConvertToDoneSkip(task));
+            done.AddTask(ConvertToDone(task),DoneType.Rescheduled);
             dayTasks.tasks.RemoveAt(index);
             DayTasks t = l.tasksByDay.Find(i => i.day == reassignDate);
             if(t == null) {
@@ -40,19 +34,10 @@ namespace tasklist
             task.ScheduledTime = null;
             t.tasks.Add(task);
         }
-        public DoneTask ConvertToDoneReschedule(ITodoTask task,DateTime date) {
-            string res = task.Name;
-            res += " - " + dateTimeToStringConverter.Convert(date);
-            return new DoneTask() { label = res };
-        }
-        
         public void Skip(DayTasks dayTasks, int index, DoneTasks done) {
             ITodoTask task = dayTasks.tasks[index];
-            done.skippedTaskLabels.Add(ConvertToDoneSkip(task));
+            done.AddTask(ConvertToDone(task),DoneType.Skipped);
             dayTasks.tasks.RemoveAt(index);
-        }
-        public DoneTask ConvertToDoneSkip(ITodoTask task) {
-            return new DoneTask() { label = task.Name };
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using ArgConvert.Converters;
 
@@ -62,7 +63,8 @@ namespace tasklist
             string line = "";
             line += task.Name;
 
-            if(task.StartTime.HasValue) {
+            if (task.StartTime.HasValue)
+            {
                 line += $" {timeOfDayToStringConverter.Convert(task.StartTime.Value)}";
             }
 
@@ -71,7 +73,7 @@ namespace tasklist
 
             if (task.Notes != null)
             {
-                line += TextDefs.FormattedTaskNote(task.Notes,2);
+                line += TextDefs.FormattedTaskNote(task.Notes, 2);
             }
             return line;
         }
@@ -122,20 +124,24 @@ namespace tasklist
 
             // FilterEmptyDays(tasklist);
             tasklist.tasksByDay.Sort(
-                (x, y) => {
-                    if(x.day.HasValue && y.day.HasValue) return x.day.Value.CompareTo(y.day.Value);
+                (x, y) =>
+                {
+                    if (x.day.HasValue && y.day.HasValue) return x.day.Value.CompareTo(y.day.Value);
                     else return (x.day.HasValue ? -1 : 1) - (y.day.HasValue ? -1 : 1);
                 }
             );
-            if(HasMultipleUnscheduledDays(tasklist)) {
+            if (HasMultipleUnscheduledDays(tasklist))
+            {
                 throw new ArgumentException("Tasklist file has multiple unscheduled days.");
             }
             return tasklist;
         }
-        bool HasMultipleUnscheduledDays(Tasklist tasklist) {
-            if(tasklist.tasksByDay.Count < 2) return false;
-            else {
-                return !tasklist.tasksByDay[tasklist.tasksByDay.Count-2].day.HasValue;
+        bool HasMultipleUnscheduledDays(Tasklist tasklist)
+        {
+            if (tasklist.tasksByDay.Count < 2) return false;
+            else
+            {
+                return !tasklist.tasksByDay[tasklist.tasksByDay.Count - 2].day.HasValue;
             }
         }
         TodoTask ParseTodoTask(string input, DateTime? day)
@@ -143,26 +149,20 @@ namespace tasklist
             bool isScheduledDay = day > DateTime.MinValue;
             TodoTask task = new TodoTask();
 
-            if (input.Length == 0)
-                return task;
+            Debug.Assert(input.Length >= 0);
 
-            //split up this line's task information, delimited by dashes
             string[] dataSplit = input.Split('-');
             int currentSplit = 0;
-
-            //set name
             task.Name = dataSplit[currentSplit].Trim();
-            //try to get start time from name
             int startTimeIndex;
-            task.StartTime = GetStartTimeFromTaskName(task.Name,out startTimeIndex);
-            if(startTimeIndex >= 0) {
+            task.StartTime = TextDefs.GetStartTimeFromTaskName(task.Name, timeOfDayToStringConverter, out startTimeIndex);
+            if (startTimeIndex >= 0)
+            {
                 task.Name = task.Name.Remove(startTimeIndex).TrimEnd();
             }
 
             currentSplit++;
 
-            //set scheduled time
-            //if this task is scheduled, check the next split for the scheduled time
             if (isScheduledDay && dataSplit.Length > currentSplit)
             {
                 string scheduledTimeText = dataSplit[currentSplit].Trim();
@@ -171,65 +171,11 @@ namespace tasklist
                 {
                     task.ScheduledTime = (TimeSpan)time;
                     currentSplit++;
-                } else throw new ArgumentException("Failed to parse time of day while loading tasklist.");
+                }
+                else throw new ArgumentException("Failed to parse time of day while loading tasklist.");
             }
-
-            //set properties
-            //if there's another split, check it for properties
-            // if (dataSplit.Length > currentSplit)
-            // {
-            //     string[] propertySplit = dataSplit[currentSplit].Split(' ');
-            //     foreach (var property in propertySplit)
-            //     {
-            //         //skip empty
-            //         if (property.Length == 0)
-            //             continue;
-            //         //decide which property is being defined based on prefix
-            //         switch (property[0])
-            //         {
-            //             case 'd':
-            //                 task.Difficulty = int.Parse(property.Substring(1));
-            //                 break;
-            //             default:
-            //                 TimeSpan duration = TimeUtils.RoundedHrsToTimeSpan(float.Parse(property));
-            //                 task.Duration = duration;
-            //                 break;
-            //         }
-            //     }
-            //     currentSplit++;
-            // }
-
-            //set duedate
-            //if there's another split, check it for duedate
-            // if (dataSplit.Length > currentSplit)
-            // {
-            //     string dueDateText = dataSplit[currentSplit].Trim();
-            //     DateTime dueDate = DateTime.Today;
-            //     if (DateTime.TryParseExact(dueDateText, "MM/dd", null, DateTimeStyles.None, out dueDate))
-            //     {
-            //         task.IsDue = true;
-            //         task.DueDate = dueDate;
-            //         currentSplit++;
-            //     }
-            // }
 
             return task;
-        }
-        // null if can't be found
-        TimeSpan? GetStartTimeFromTaskName(string name, out int index) {
-            int[] todLengthRange = timeOfDayToStringConverter.PossibleLengthRange();
-            for(int i = todLengthRange[1]-1; i >= todLengthRange[0]; i-- ) {
-                int checkIndex = name.Length-i;
-                if(checkIndex < 0) continue;
-                string potentialText = name.Substring(checkIndex);
-                TimeSpan? res = (TimeSpan?)timeOfDayToStringConverter.ConvertBack(potentialText);
-                if(res.HasValue) {
-                    index = checkIndex;
-                    return res;
-                }
-            }
-            index = -1;
-            return null;
         }
         void FilterEmptyDays(Tasklist tasklist)
         {

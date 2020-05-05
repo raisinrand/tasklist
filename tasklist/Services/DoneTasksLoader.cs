@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using ArgConvert.Converters;
 
 namespace tasklist
 {
@@ -11,6 +13,8 @@ namespace tasklist
         string fileName;
 
         protected override bool IgnoreMissing { get { return true; } }
+        
+        TimeOfDayToStringConverter timeOfDayToStringConverter = new TimeOfDayToStringConverter();
 
         public DoneTasksLoader(string fileName)
         {
@@ -21,27 +25,36 @@ namespace tasklist
         {
             var lines = new List<string>();
 
-            lines.AddRange(tasks.doneTaskLabels.SelectMany(i => WriteDoneTask(i)));
-            if(tasks.rescheduledTaskLabels.Count > 0) {
+            lines.AddRange(tasks.Done.SelectMany(i => WriteDoneTask(i)));
+            if(tasks.Rescheduled.Count() > 0) {
                 lines.Add("");
                 lines.Add(TextDefs.rescheduledMarker + ":");
-                lines.AddRange(TextDefs.Indent(1,tasks.rescheduledTaskLabels.SelectMany(i => WriteDoneTask(i))));
+                lines.AddRange(TextDefs.Indent(1,tasks.Rescheduled.SelectMany(i => WriteDoneTask(i))));
             }
-            if(tasks.skippedTaskLabels.Count > 0) {
+            if(tasks.Skipped.Count() > 0) {
                 lines.Add("");
                 lines.Add(TextDefs.skippedMarker + ":");
-                lines.AddRange(TextDefs.Indent(1,tasks.skippedTaskLabels.SelectMany(i => WriteDoneTask(i))));
+                lines.AddRange(TextDefs.Indent(1,tasks.Skipped.SelectMany(i => WriteDoneTask(i))));
             }
             return lines.ToArray();
         }
         string[] WriteDoneTask(DoneTask task)
         {
-            string res = task.label;
-            if (task.notes != null)
+            string line = "";
+            line += task.Name;
+
+            if (task.StartTime.HasValue)
             {
-                res += TextDefs.FormattedTaskNote(task.notes,1);
+                line += $" {timeOfDayToStringConverter.Convert(task.StartTime.Value)}";
             }
-            return res.SplitLines();
+
+            line += $" - {timeOfDayToStringConverter.Convert(task.CompleteTime)}";
+
+            if (task.Notes != null)
+            {
+                line += TextDefs.FormattedTaskNote(task.Notes, 1);
+            }
+            return line.SplitLines();
         }
         enum ParseMode {
             Done,
@@ -53,6 +66,7 @@ namespace tasklist
             DoneTasks res = new DoneTasks();
             ParseMode mode = ParseMode.Done;
             int indentLevel = 0;
+            DoneTask lastAddedTask = null;
             foreach(string line in lines) {
                 if(string.IsNullOrWhiteSpace(line)) continue;
                 string trimmedLine = line.Trim();
@@ -68,41 +82,55 @@ namespace tasklist
                 }
                 if(line.StartsWith(TextDefs.Indent(indentLevel+1)))
                 {
-                    List<DoneTask> prevList;
-                    switch(mode) {
-                        case ParseMode.Rescheduled:
-                            prevList = res.rescheduledTaskLabels;
-                        break;
-                        case ParseMode.Skipped:
-                            prevList = res.skippedTaskLabels;
-                        break;
-                        default:
-                            prevList = res.doneTaskLabels;
-                        break;
-                    }
-                    if (prevList.Count == 0) continue;
-                    var prevTask = prevList[prevList.Count - 1];
-                    if (prevTask == null) continue;
-                    prevTask.notes += (String.IsNullOrWhiteSpace(prevTask.notes) ? "" : Environment.NewLine) + trimmedLine;
+                    if(lastAddedTask == null) continue;
+                    lastAddedTask.Notes += (String.IsNullOrWhiteSpace(lastAddedTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
                     continue;
                 }
-
-                DoneTask task = new DoneTask() { label=trimmedLine };
-
-                switch(mode)
-                {
-                    case ParseMode.Done:
-                        res.doneTaskLabels.Add(task);
-                    break;
-                    case ParseMode.Rescheduled:
-                        res.rescheduledTaskLabels.Add(task);
-                    break;
-                    case ParseMode.Skipped:
-                        res.skippedTaskLabels.Add(task);
-                    break;
-                }
+                DoneTask task = ParseDoneTask(trimmedLine);
+                if(mode == ParseMode.Done) Debug.Assert(task.CompleteTime.HasValue, "Unexpected done task without completion time.");
+                DoneType doneType = ModeToDoneType(mode);
+                res.AddTask(task,doneType);
+                lastAddedTask = task;
             }
             return res;
+        }
+        DoneTask ParseDoneTask(string input) {
+            DoneTask task = new DoneTask();
+
+            Debug.Assert(input.Length >= 0);
+            
+            string[] dataSplit = input.Split('-');
+            int currentSplit = 0;
+            task.Name = dataSplit[currentSplit].Trim();
+            int startTimeIndex;
+            task.StartTime = TextDefs.GetStartTimeFromTaskName(task.Name, timeOfDayToStringConverter, out startTimeIndex);
+            if (startTimeIndex >= 0)
+            {
+                task.Name = task.Name.Remove(startTimeIndex).TrimEnd();
+            }
+
+            currentSplit++;
+
+            if (dataSplit.Length > currentSplit)
+            {
+                string scheduledTimeText = dataSplit[currentSplit].Trim();
+                var time = timeOfDayToStringConverter.ConvertBack(scheduledTimeText);
+                if (time != null)
+                {
+                    task.CompleteTime = (TimeSpan)time;
+                    currentSplit++;
+                }
+                else throw new ArgumentException("Failed to parse time of day while loading tasklist.");
+            }
+            return task;
+        }
+        DoneType ModeToDoneType(ParseMode mode) {
+            switch(mode) {
+                case ParseMode.Done: return DoneType.Done;
+                case ParseMode.Rescheduled: return DoneType.Rescheduled;
+                case ParseMode.Skipped: return DoneType.Skipped;
+            }
+            throw new Exception("impossible");
         }
     }
 }

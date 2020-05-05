@@ -81,6 +81,7 @@ namespace tasklist
         {
             Tasklist tasklist = new Tasklist();
             DayTasks currentDayTasks = null;
+            TodoTask lastAddedTask = null;
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
@@ -107,10 +108,8 @@ namespace tasklist
                 //check if this line marks a note about the previous task
                 else if (line.StartsWith(TextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
                 {
-                    if (currentDayTasks.tasks.Count == 0) continue;
-                    var prevTask = currentDayTasks.tasks[currentDayTasks.tasks.Count - 1] as TodoTask;
-                    if (prevTask == null) continue;
-                    prevTask.Notes += (String.IsNullOrWhiteSpace(prevTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
+                    if (lastAddedTask == null) continue;
+                    lastAddedTask.Notes += (String.IsNullOrWhiteSpace(lastAddedTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
 
                 }
                 //otherwise read task information from this line
@@ -119,6 +118,7 @@ namespace tasklist
                     line = trimmedLine;
                     TodoTask task = ParseTodoTask(line, currentDayTasks.day);
                     currentDayTasks.tasks.Add(task);
+                    lastAddedTask = task;
                 }
             }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using ArgConvert.Converters;
 
 namespace tasklist
@@ -32,7 +31,6 @@ namespace tasklist
                 string[] taskLines = TextDefs.Indent(1, WriteTodoTaskRepeatedTemplate(current));
                 lines.AddRange(taskLines);
             }
-
             return lines.ToArray();
         }
         string RepeatSchemeLabel(RepeatScheme scheme)
@@ -67,6 +65,7 @@ namespace tasklist
         {
             var recurring = new RecurringTasks();
             RepeatScheme currentScheme = new RepeatNever();
+            RecurringTaskTemplate lastAddedTemplate = null;
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i];
@@ -80,10 +79,8 @@ namespace tasklist
                 //check if this line marks a note about the previous task
                 else if (line.StartsWith(TextDefs.Indent(2)) || String.IsNullOrWhiteSpace(line))
                 {
-                    if (recurring.repeatedTasks.Count == 0) continue;
-                    var prevTask = recurring.repeatedTasks[recurring.repeatedTasks.Count - 1] as RecurringTaskTemplate;
-                    if (prevTask == null) continue;
-                    prevTask.Notes += (String.IsNullOrWhiteSpace(prevTask.Notes) ? "" : Environment.NewLine) + trimmedLine;
+                    if (lastAddedTemplate == null) continue;
+                    lastAddedTemplate.Notes += (String.IsNullOrWhiteSpace(lastAddedTemplate.Notes) ? "" : Environment.NewLine) + trimmedLine;
                 }
                 //otherwise read task information from this line
                 else
@@ -91,6 +88,7 @@ namespace tasklist
                     line = trimmedLine;
                     RecurringTaskTemplate template = ParseRecurringTaskTemplate(line, currentScheme);
                     recurring.repeatedTasks.Add(template);
+                    lastAddedTemplate = template;
                 }
             }
             return recurring;

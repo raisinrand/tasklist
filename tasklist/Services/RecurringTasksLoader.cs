@@ -102,7 +102,7 @@ namespace tasklist
                 RepeatScheme = scheme
             };
             //split up this line's task information, delimited by dashes
-            string[] dataSplit = input.Split('-');
+            string[] dataSplit = input.Split(TextDefs.separator);
             int currentSplit = 0;
 
             //set name

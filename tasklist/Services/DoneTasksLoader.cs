@@ -47,8 +47,9 @@ namespace tasklist
             {
                 line += $" {timeOfDayToStringConverter.Convert(task.StartTime.Value)}";
             }
-
-            line += $" - {timeOfDayToStringConverter.Convert(task.CompleteTime)}";
+            if (task.CompleteTime.HasValue) {
+                line += $" - {timeOfDayToStringConverter.Convert(task.CompleteTime)}";
+            }
 
             if (task.Notes != null)
             {
@@ -99,7 +100,7 @@ namespace tasklist
 
             Debug.Assert(input.Length >= 0);
             
-            string[] dataSplit = input.Split('-');
+            string[] dataSplit = input.Split(TextDefs.separator);
             int currentSplit = 0;
             task.Name = dataSplit[currentSplit].Trim();
             int startTimeIndex;

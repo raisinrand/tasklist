@@ -151,7 +151,7 @@ namespace tasklist
 
             Debug.Assert(input.Length >= 0);
 
-            string[] dataSplit = input.Split('-');
+            string[] dataSplit = input.Split(TextDefs.separator);
             int currentSplit = 0;
             task.Name = dataSplit[currentSplit].Trim();
             int startTimeIndex;

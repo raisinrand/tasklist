@@ -17,7 +17,7 @@ namespace tasklist
         }
         public void Complete(DayTasks dayTasks, int index, DoneTasks done, TimeSpan? startTime, TimeSpan completeTime) {
             ITodoTask task = dayTasks.tasks[index];
-            done.AddTask(ConvertToDone(task,startTime ?? task.StartTime,completeTime),DoneType.Done);
+            done.AddTask(ConvertToDone(task,startTime,completeTime),DoneType.Done);
             dayTasks.tasks.RemoveAt(index);
         }
         public void Reschedule(Tasklist l, DayTasks dayTasks, int index, DateTime reassignDate, DoneTasks done) {

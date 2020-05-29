@@ -7,6 +7,7 @@ namespace tasklist
 {
     static class TextDefs
     {
+        public const string separator = " - ";
         public const string indent = "    ";
         // do.txt
         public const string unscheduledMarker = "UNSCHEDULED";

@@ -8,7 +8,6 @@ namespace tasklist
     class Program
     {
         // current day in help refers to first day in listing
-
         const string defaultDir = "";
         const string defaultFileName = "do.txt";
         const string defaultRecurringExtension = "-recurring";
@@ -85,6 +84,12 @@ namespace tasklist
             [Value(0, MetaName = "task", HelpText = "The task to mark as completed, identified with a prefix.")]
             public string Task { get; set; }
         }
+        [Verb("start", HelpText = "Set starting time of next task to now.")]
+        class StartOptions : BaseOptions
+        {
+            [Value(0, MetaName = "task", HelpText = "The task to set the starting time for.",Required=false,Default=null)]
+            public string Task {get; set;}
+        }
 
         static void Main(string[] args)
         {
@@ -95,13 +100,15 @@ namespace tasklist
                 PushOptions,
                 CompleteOptions,
                 RescheduleOptions,
-                SkipOptions
+                SkipOptions,
+                StartOptions
                 >(args)
                     .WithParsed<PopulateOptions>(opts => RunPopulate(opts))
                     .WithParsed<PushOptions>(opts => RunPush(opts))
                     .WithParsed<CompleteOptions>(opts => RunComplete(opts))
                     .WithParsed<RescheduleOptions>(opts => RunReschedule(opts))
                     .WithParsed<SkipOptions>(opts => RunSkip(opts))
+                    .WithParsed<StartOptions>(opts => RunStart(opts))
                     .WithNotParsed(errs => {});
             }
             catch
@@ -235,6 +242,24 @@ namespace tasklist
             doneLoader.Save(d);
         }
 
+        static void RunStart(StartOptions opts)
+        {
+            Start(opts);
+            Console.WriteLine("Done.");
+        }
+        static void Start(StartOptions opts)
+        {
+            var baseOpts = new ProcessedBaseOptions(opts);
+            var tasklistLoader = new TasklistLoader(baseOpts.path);
+            Tasklist l = tasklistLoader.Load();
+            DayTasks targetDay;
+            if(!TryCurrentDay(l,out targetDay)) return;
+            int index = 0;
+            if(opts.Task != null) index = ParseIndexExcept(targetDay,opts.Task);
+            TimeSpan now = DateTime.Now.TimeOfDay;
+            targetDay.tasks[index].StartTime = now;
+            tasklistLoader.Save(l);
+        }
 
         static int Test()
         {
